@@ -76,7 +76,7 @@ async function getAvailableModel(): Promise<string> {
       (error as Error).message
     );
     // Fallback to environment variable or default
-    return process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+    return process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
   }
 }
 
