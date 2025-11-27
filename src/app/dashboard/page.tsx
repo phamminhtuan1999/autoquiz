@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BuyCreditsButton } from "@/components/buy-credits-button";
+import { handlePaymentSuccess } from "@/actions/handle-payment-success";
 
 type QuizListItem = {
   id: string;
@@ -9,7 +10,11 @@ type QuizListItem = {
   created_at: string;
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { success?: string; session_id?: string };
+}) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -17,6 +22,15 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/");
+  }
+
+  // Handle successful payment
+  if (searchParams.success === "1" && searchParams.session_id) {
+    try {
+      await handlePaymentSuccess(searchParams.session_id);
+    } catch (error) {
+      console.error("Error handling payment success:", error);
+    }
   }
 
   const [{ data: profile }, { data: quizzes }] = await Promise.all([

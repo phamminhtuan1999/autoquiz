@@ -21,6 +21,8 @@ export async function POST() {
     "http://localhost:3000";
 
   const stripe = getStripe();
+  console.log("Creating checkout session for user:", user.id);
+  
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     customer_email: user.email ?? undefined,
@@ -34,11 +36,17 @@ export async function POST() {
         quantity: 1,
       },
     ],
-    success_url: `${origin}/dashboard?success=1`,
+    success_url: `${origin}/dashboard?success=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/dashboard?canceled=1`,
     metadata: {
       userId: user.id,
     },
+  });
+
+  console.log("Checkout session created:", {
+    sessionId: session.id,
+    userId: user.id,
+    metadata: session.metadata
   });
 
   return NextResponse.json({ url: session.url });
