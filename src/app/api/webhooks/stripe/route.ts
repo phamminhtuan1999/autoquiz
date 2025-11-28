@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { createServiceRoleClient } from "@/lib/supabase/server-admin";
+import { recordCreditsForSession } from "@/lib/payments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +36,10 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     console.log("Webhook event verified:", event.type);
   } catch (err) {
-    console.error("Webhook signature verification failed:", (err as Error).message);
+    console.error(
+      "Webhook signature verification failed:",
+      (err as Error).message
+    );
     return NextResponse.json(
       { error: `Invalid signature ${(err as Error).message}` },
       { status: 400 }
@@ -46,11 +49,11 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.userId;
-    
+
     console.log("Processing checkout session completed:", {
       sessionId: session.id,
       userId: userId,
-      metadata: session.metadata
+      metadata: session.metadata,
     });
 
     if (!userId) {
@@ -62,25 +65,14 @@ export async function POST(req: Request) {
     }
 
     try {
-      const supabase = createServiceRoleClient();
-      console.log("Adding 10 credits to user:", userId);
-      
-      const { error } = await supabase.rpc("add_credits", {
-        p_user_id: userId,
-        p_amount: 10,
-      } as never);
+      const result = await recordCreditsForSession(session, "webhook");
+      const alreadyProcessed = result.alreadyProcessed ?? false;
 
-      if (error) {
-        console.error("Failed to add credits:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      console.log("Successfully added 10 credits to user:", userId);
-      return NextResponse.json({ 
-        success: true, 
-        message: "Credits added successfully",
-        userId: userId,
-        amount: 10
+      return NextResponse.json({
+        success: alreadyProcessed ? true : result.success ?? false,
+        alreadyProcessed,
+        userId,
+        amount: result.amount ?? 0,
       });
     } catch (err) {
       console.error("Error processing credit addition:", err);

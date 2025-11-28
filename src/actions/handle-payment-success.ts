@@ -1,8 +1,8 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createServiceRoleClient } from "@/lib/supabase/server-admin";
 import { getStripe } from "@/lib/stripe";
+import { recordCreditsForSession } from "@/lib/payments";
 
 export async function handlePaymentSuccess(sessionId: string) {
   try {
@@ -26,19 +26,15 @@ export async function handlePaymentSuccess(sessionId: string) {
       return { error: "Session does not belong to current user" };
     }
 
-    // Add credits using service role client
-    const adminSupabase = createServiceRoleClient();
-    const { error } = await adminSupabase.rpc("add_credits", {
-      p_user_id: user.id,
-      p_amount: 10,
-    } as never);
+    const result = await recordCreditsForSession(session, "success");
 
-    if (error) {
-      console.error("Failed to add credits in success handler:", error);
-      return { error: "Failed to add credits" };
-    }
+    const alreadyProcessed = result.alreadyProcessed ?? false;
 
-    return { success: true, creditsAdded: 10 };
+    return {
+      success: alreadyProcessed ? true : result.success ?? false,
+      alreadyProcessed,
+      creditsAdded: result.amount ?? 0,
+    };
   } catch (error) {
     console.error("Error handling payment success:", error);
     return { error: "Internal server error" };

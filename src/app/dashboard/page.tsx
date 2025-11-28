@@ -13,7 +13,7 @@ type QuizListItem = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { success?: string; session_id?: string };
+  searchParams: Promise<{ success?: string; session_id?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -24,10 +24,13 @@ export default async function DashboardPage({
     redirect("/");
   }
 
+  // Await searchParams before accessing properties
+  const params = await searchParams;
+
   // Handle successful payment
-  if (searchParams.success === "1" && searchParams.session_id) {
+  if (params.success === "1" && params.session_id) {
     try {
-      await handlePaymentSuccess(searchParams.session_id);
+      await handlePaymentSuccess(params.session_id);
     } catch (error) {
       console.error("Error handling payment success:", error);
     }
