@@ -37,6 +37,15 @@ create table if not exists public.quizzes (
   created_at timestamptz not null default now()
 );
 
+-- Track processed Stripe checkout sessions to guarantee idempotent credits.
+create table if not exists public.payment_events (
+  session_id text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  amount integer not null,
+  source text not null check (source in ('webhook', 'success')),
+  created_at timestamptz not null default now()
+);
+
 -- Helper RPCs to mutate credits atomically.
 create or replace function public.add_credits(p_user_id uuid, p_amount int)
 returns void
@@ -72,6 +81,7 @@ $$;
 -- Enforce per-user visibility via RLS.
 alter table public.profiles enable row level security;
 alter table public.quizzes enable row level security;
+alter table public.payment_events enable row level security;
 
 do $$
 begin
