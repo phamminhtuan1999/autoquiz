@@ -78,6 +78,24 @@ begin
 end;
 $$;
 
+create or replace function public.deduct_credits(p_user_id uuid, p_amount int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.profiles
+  set credits = credits - p_amount
+  where id = p_user_id
+  and credits >= p_amount;
+
+  if not found then
+    raise exception 'Insufficient credits';
+  end if;
+end;
+$$;
+
 -- Enforce per-user visibility via RLS.
 alter table public.profiles enable row level security;
 alter table public.quizzes enable row level security;

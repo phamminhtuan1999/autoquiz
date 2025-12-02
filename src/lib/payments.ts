@@ -21,32 +21,24 @@ export async function recordCreditsForSession(
 
   const supabase = createServiceRoleClient();
 
-  const { data: existing, error: fetchError } = await supabase
-    .from("payment_events")
-    .select("session_id")
-    .eq("session_id", session.id)
-    .maybeSingle();
+  // Verify user profile exists before processing
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, credits")
+    .eq("id", userId)
+    .single();
 
-  if (fetchError) {
-    throw new Error(`Failed to check payment_events: ${fetchError.message}`);
-  }
-
-  if (existing) {
-    console.log(
-      `Stripe session ${session.id} already processed, skipping credit addition`
+  if (profileError || !profile) {
+    console.error(`Profile not found for user ${userId}:`, profileError);
+    throw new Error(
+      `User profile not found: ${
+        profileError?.message || "Profile does not exist"
+      }`
     );
-    return { alreadyProcessed: true };
   }
 
-  const { error: creditError } = await supabase.rpc("add_credits", {
-    p_user_id: userId,
-    p_amount: CREDITS_PER_PURCHASE,
-  } as never);
-
-  if (creditError) {
-    throw new Error(`Failed to add credits: ${creditError.message}`);
-  }
-
+  // Try to insert payment event first - this acts as an atomic check
+  // If the session_id already exists, the insert will fail due to primary key constraint
   const { error: insertError } = await supabase.from("payment_events").insert({
     session_id: session.id,
     user_id: userId,
@@ -54,12 +46,51 @@ export async function recordCreditsForSession(
     source,
   } as never);
 
+  // If insert failed due to duplicate key, payment was already processed
   if (insertError) {
-    throw new Error(
-      `Credits added but failed to record payment event: ${insertError.message}`
-    );
+    // Check if it's a duplicate key error (payment already processed)
+    if (insertError.code === "23505" || insertError.message.includes("duplicate")) {
+      return { alreadyProcessed: true };
+    }
+    // Otherwise, it's a real error
+    throw new Error(`Failed to record payment event: ${insertError.message}`);
+  }
+
+  // Payment event inserted successfully, now add credits atomically
+  const { error: creditError } = await supabase.rpc("add_credits", {
+    p_user_id: userId,
+    p_amount: CREDITS_PER_PURCHASE,
+  } as never);
+
+  if (creditError) {
+    console.error(`Failed to add credits via RPC:`, creditError);
+    // Try to rollback the payment event insert
+    await supabase
+      .from("payment_events")
+      .delete()
+      .eq("session_id", session.id);
+    throw new Error(`Failed to add credits: ${creditError.message}`);
+  }
+
+  // Verify credits were actually added
+  const { data: updatedProfile, error: verifyError } = await supabase
+    .from("profiles")
+    .select("credits")
+    .eq("id", userId)
+    .single();
+
+  if (verifyError) {
+    console.error(`Failed to verify credits after addition:`, verifyError);
+  } else if (updatedProfile) {
+    const updatedCredits = (updatedProfile as { credits: number }).credits;
+    const profileCredits = (profile as { credits: number }).credits;
+    const expectedCredits = profileCredits + CREDITS_PER_PURCHASE;
+    if (updatedCredits !== expectedCredits) {
+      console.error(
+        `Credit addition mismatch! Expected ${expectedCredits}, got ${updatedCredits}`
+      );
+    }
   }
 
   return { success: true, amount: CREDITS_PER_PURCHASE };
 }
-

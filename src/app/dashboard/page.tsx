@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BuyCreditsButton } from "@/components/buy-credits-button";
 import { handlePaymentSuccess } from "@/actions/handle-payment-success";
 
+export const dynamic = "force-dynamic";
+
 type QuizListItem = {
   id: string;
   title: string;
@@ -28,11 +30,18 @@ export default async function DashboardPage({
   const params = await searchParams;
 
   // Handle successful payment
+  let paymentResult: {
+    success?: boolean;
+    error?: string;
+    creditsAdded?: number;
+    alreadyProcessed?: boolean;
+  } | null = null;
   if (params.success === "1" && params.session_id) {
     try {
-      await handlePaymentSuccess(params.session_id);
+      paymentResult = await handlePaymentSuccess(params.session_id);
     } catch (error) {
       console.error("Error handling payment success:", error);
+      paymentResult = { error: (error as Error).message };
     }
   }
 
@@ -55,6 +64,21 @@ export default async function DashboardPage({
         <p className="mt-2 text-sm text-slate-500">
           Each quiz generation consumes one credit.
         </p>
+        {paymentResult?.success && (
+          <div className="mt-4 rounded-md bg-green-50 p-3 text-sm text-green-800">
+            ✓ Successfully added {paymentResult.creditsAdded ?? 10} credits!
+          </div>
+        )}
+        {paymentResult?.alreadyProcessed && (
+          <div className="mt-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+            ℹ Payment already processed. Credits were added previously.
+          </div>
+        )}
+        {paymentResult?.error && (
+          <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+            ✗ Error processing payment: {paymentResult.error}
+          </div>
+        )}
         <div className="mt-4">
           <BuyCreditsButton />
         </div>

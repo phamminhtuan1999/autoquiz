@@ -12,6 +12,7 @@ export async function handlePaymentSuccess(sessionId: string) {
     } = await supabase.auth.getUser();
 
     if (!user) {
+      console.error("User not authenticated when handling payment success");
       return { error: "User not authenticated" };
     }
 
@@ -19,24 +20,29 @@ export async function handlePaymentSuccess(sessionId: string) {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid") {
+      console.error(`Payment not completed. Status: ${session.payment_status}`);
       return { error: "Payment not completed" };
     }
 
     if (session.metadata?.userId !== user.id) {
+      console.error(
+        `Session userId mismatch. Expected: ${user.id}, Got: ${session.metadata?.userId}`
+      );
       return { error: "Session does not belong to current user" };
     }
 
     const result = await recordCreditsForSession(session, "success");
 
     const alreadyProcessed = result.alreadyProcessed ?? false;
+    const success = alreadyProcessed ? true : result.success ?? false;
 
     return {
-      success: alreadyProcessed ? true : result.success ?? false,
+      success,
       alreadyProcessed,
       creditsAdded: result.amount ?? 0,
     };
   } catch (error) {
     console.error("Error handling payment success:", error);
-    return { error: "Internal server error" };
+    return { error: (error as Error).message || "Internal server error" };
   }
 }

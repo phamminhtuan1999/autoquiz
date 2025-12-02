@@ -34,7 +34,6 @@ export async function POST(req: Request) {
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    console.log("Webhook event verified:", event.type);
   } catch (err) {
     console.error(
       "Webhook signature verification failed:",
@@ -49,12 +48,6 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const userId = session.metadata?.userId;
-
-    console.log("Processing checkout session completed:", {
-      sessionId: session.id,
-      userId: userId,
-      metadata: session.metadata,
-    });
 
     if (!userId) {
       console.error("No userId found in session metadata");
@@ -81,8 +74,6 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-  } else {
-    console.log("Ignoring webhook event type:", event.type);
   }
 
   return NextResponse.json({ received: true });

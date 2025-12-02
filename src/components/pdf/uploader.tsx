@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { QuizTest } from "@/components/quiz/test";
 import { QuizResults } from "@/components/quiz/results";
+import { CramButton } from "@/components/cram-button";
 
 export function PdfUploader() {
   const [file, setFile] = useState<File | null>(null);
@@ -205,6 +206,10 @@ export function PdfUploader() {
       >
         {isPending ? "Generating…" : "Generate Quiz"}
       </button>
+
+      {/* Cram Mode Button - Premium 3-Credit Feature */}
+      <CramButton file={file} disabled={isPending} />
+
       {progress > 0 && progress < 100 && (
         <div className="w-full">
           <div className="flex justify-between text-sm text-slate-600 mb-1">

@@ -21,7 +21,6 @@ export async function POST() {
     "http://localhost:3000";
 
   const stripe = getStripe();
-  console.log("Creating checkout session for user:", user.id);
   
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -41,12 +40,6 @@ export async function POST() {
     metadata: {
       userId: user.id,
     },
-  });
-
-  console.log("Checkout session created:", {
-    sessionId: session.id,
-    userId: user.id,
-    metadata: session.metadata
   });
 
   return NextResponse.json({ url: session.url });

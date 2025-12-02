@@ -80,7 +80,7 @@ async function getAvailableModel(): Promise<string> {
   }
 }
 
-async function getGeminiModel() {
+export async function getGeminiModel() {
   const genAI = new GoogleGenerativeAI(getGeminiApiKey());
   const modelName = await getAvailableModel();
   return genAI.getGenerativeModel({
