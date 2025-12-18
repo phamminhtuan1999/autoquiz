@@ -3,9 +3,18 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text unique,
   full_name text,
+  university text,
   credits integer not null default 3,
   created_at timestamptz not null default now()
 );
+
+-- Add university column if it doesn't exist (migrations for existing tables)
+do $$
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'university') then
+    alter table public.profiles add column university text;
+  end if;
+end $$;
 
 -- Maintain profile rows when new auth users register.
 create or replace function public.handle_new_user()
@@ -43,6 +52,16 @@ create table if not exists public.payment_events (
   user_id uuid not null references public.profiles (id) on delete cascade,
   amount integer not null,
   source text not null check (source in ('webhook', 'success')),
+  created_at timestamptz not null default now()
+);
+
+-- Track individual question attempts for leaderboards.
+create table if not exists public.question_attempts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  quiz_id uuid not null references public.quizzes (id) on delete cascade,
+  question_index integer not null,
+  is_correct boolean not null,
   created_at timestamptz not null default now()
 );
 
@@ -100,6 +119,7 @@ $$;
 alter table public.profiles enable row level security;
 alter table public.quizzes enable row level security;
 alter table public.payment_events enable row level security;
+alter table public.question_attempts enable row level security;
 
 do $$
 begin
@@ -149,13 +169,35 @@ begin
 
   if not exists (
     select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'quizzes'
-      and policyname = 'Users delete own quizzes'
+    where schemaname = 'public' and tablename = 'profiles'
+      and policyname = 'Profiles are public'
   ) then
-    create policy "Users delete own quizzes"
-      on public.quizzes
-      for delete
-      using (auth.uid() = user_id);
+    create policy "Profiles are public"
+      on public.profiles
+      for select
+      using (true);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'question_attempts'
+      and policyname = 'Users insert own attempts'
+  ) then
+    create policy "Users insert own attempts"
+      on public.question_attempts
+      for insert
+      with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'question_attempts'
+      and policyname = 'Attempts are public'
+  ) then
+    create policy "Attempts are public"
+      on public.question_attempts
+      for select
+      using (true);
   end if;
 end;
 $$;

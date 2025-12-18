@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { QuizQuestion } from "@/lib/gemini";
-import type { CramResult, GoldenNugget, BlitzQuestion } from "@/types/cram";
+import type { CramResult } from "@/types/cram";
+import { CramModeDisplay } from "@/components/cram-mode-display";
+import { RegularQuizDisplay } from "@/components/regular-quiz-display";
 
 type QuizDetailProps = {
   params: Promise<{ quizId: string }>;
@@ -89,7 +91,10 @@ export default async function QuizDetailPage({ params }: QuizDetailProps) {
 
       {/* Regular Quiz Display */}
       {isRegularQuiz && (
-        <RegularQuizDisplay questions={quiz.questions as QuizQuestion[]} />
+        <RegularQuizDisplay 
+          questions={quiz.questions as QuizQuestion[]} 
+          quizId={quizId}
+        />
       )}
 
       {/* Fallback for unknown format */}
@@ -100,114 +105,6 @@ export default async function QuizDetailPage({ params }: QuizDetailProps) {
           </p>
         </div>
       )}
-    </div>
-  );
-}
-
-function CramModeDisplay({ cramResult }: { cramResult: CramResult }) {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Golden Nuggets */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span>📝</span>
-            Golden Nuggets
-          </h2>
-          <span className="text-sm text-slate-500 font-medium">
-            {cramResult.summary.length} Facts
-          </span>
-        </div>
-        <div className="space-y-3">
-          {cramResult.summary.map((nugget: GoldenNugget, index) => (
-            <div
-              key={index}
-              className="border border-orange-200 bg-orange-50/50 rounded-lg p-4"
-            >
-              <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
-                  {index + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-900 text-sm mb-1">
-                    {nugget.topic}
-                  </h3>
-                  <p className="text-sm text-slate-700 leading-relaxed">
-                    {nugget.content}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Blitz Questions */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span>⚡</span>
-            Blitz Flashcards
-          </h2>
-          <span className="text-sm text-slate-500 font-medium">
-            {cramResult.blitz_questions.length} Questions
-          </span>
-        </div>
-        <div className="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
-          {cramResult.blitz_questions.map((card: BlitzQuestion, index) => (
-            <div key={index} className="border border-slate-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center">
-                  {index + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 text-sm mb-2">
-                    {card.question}
-                  </p>
-                  <div className="mt-2 pt-2 border-t border-slate-200">
-                    <p className="text-sm text-slate-700 bg-slate-50 rounded p-2">
-                      <strong className="text-slate-900">Answer:</strong>{" "}
-                      {card.answer}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RegularQuizDisplay({ questions }: { questions: QuizQuestion[] }) {
-  return (
-    <div className="space-y-4">
-      <ol className="space-y-4">
-        {questions.map((question, index) => (
-          <li
-            key={index}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <p className="text-base font-semibold text-slate-900">
-              {index + 1}. {question.question}
-            </p>
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
-              {question.options.map((option, optionIndex) => (
-                <li key={optionIndex}>{option}</li>
-              ))}
-            </ul>
-            <p className="mt-3 text-sm font-semibold text-emerald-600">
-              Answer: {question.answer}
-            </p>
-            {question.explanation && (
-              <p className="mt-2 text-sm text-slate-500">
-                <strong>Why:</strong> {question.explanation}
-              </p>
-            )}
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }
