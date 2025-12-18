@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-fredoka);
+  --font-body: var(--font-nunito);
+  --color-primary: #4F46E5;
+  --color-primary-light: #818CF8;
+  --color-accent: #F97316;
+  --color-success: #10B981;
+  --color-background: #EEF2FF;
+  --color-clay-shadow-out: inset 3px 3px 6px rgba(255, 255, 255, 0.7), inset -3px -3px 6px rgba(79, 70, 229, 0.1), 8px 8px 20px rgba(79, 70, 229, 0.1), -8px -8px 20px rgba(255, 255, 255, 1);
+  /* Refined Dark Mode Variables */
+  --color-background-dark: #0f172a;
+  --color-background-offset-dark: #1e1b4b;
+  --color-card-dark: #1e293b;
+  --color-clay-shadow-out-dark: inset 2px 2px 4px rgba(255, 255, 255, 0.05), inset -4px -4px 8px rgba(0, 0, 0, 0.4), 10px 10px 20px rgba(0, 0, 0, 0.4), -5px -5px 15px rgba(255, 255, 255, 0.02);
+  --color-clay-shadow-in-dark: inset 6px 6px 10px rgba(0, 0, 0, 0.4), inset -6px -6px 10px rgba(255, 255, 255, 0.03);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer utilities {
+  .clay-card {
+    @apply bg-white dark:bg-slate-800/90 rounded-3xl border-2 border-white/40 dark:border-white/5 backdrop-blur-sm;
+    box-shadow: var(--color-clay-shadow-out);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  :is(.dark .clay-card) {
+    box-shadow: var(--color-clay-shadow-out-dark);
+    background-color: #1e293b;
+  }
+  
+  .clay-card:hover {
+    transform: translateY(-4px);
+    box-shadow: inset 3px 3px 6px rgba(255, 255, 255, 0.7), inset -3px -3px 6px rgba(79, 70, 229, 0.1), 12px 12px 24px rgba(79, 70, 229, 0.15), -8px -8px 20px rgba(255, 255, 255, 1);
+  }
+
+  :is(.dark .clay-card:hover) {
+    box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.05), inset -4px -4px 8px rgba(0, 0, 0, 0.5), 15px 15px 30px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(255, 255, 255, 0.03);
+  }
+
+  .clay-button {
+    @apply px-6 py-3 rounded-2xl font-heading font-bold text-white transition-all active:scale-95;
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+    box-shadow: 6px 6px 12px rgba(79, 70, 229, 0.2), -6px -6px 12px rgba(255, 255, 255, 0.8);
+  }
+
+  :is(.dark .clay-button) {
+    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.4), -4px -4px 10px rgba(255, 255, 255, 0.05);
+  }
+
+  .clay-button:hover {
+    filter: brightness(1.1);
+  }
+
+  .clay-button:active {
+    box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.1), inset -4px -4px 8px rgba(255, 255, 255, 0.2);
+  }
+
+  :is(.dark .clay-button:active) {
+    box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.03);
   }
 }
 
 body {
-  background: #f8fafc;
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui;
+  background-color: var(--color-background);
+  font-family: var(--font-body), sans-serif;
+  color: #1E1B4B;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(129, 140, 248, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:is(.dark body) {
+  background-color: var(--color-background-dark);
+  color: #f8fafc;
+  background-image: 
+    radial-gradient(circle at top, #1e1b4b 0%, #0f172a 100%);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), sans-serif;
 }

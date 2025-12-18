@@ -20,10 +20,6 @@ export default function LeaderboardPage() {
   const [newUniversity, setNewUniversity] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   async function fetchData() {
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
@@ -48,6 +44,11 @@ export default function LeaderboardPage() {
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line
+    fetchData();
+  }, []);
 
   const handleUpdateUniversity = async (e: React.FormEvent) => {
     e.preventDefault();
