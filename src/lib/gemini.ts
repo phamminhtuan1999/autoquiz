@@ -41,7 +41,7 @@ async function getAvailableModel(): Promise<string> {
     const models = data.models || [];
 
     // Prefer models that support generateContent and are stable
-    const preferredModels = ["gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
+    const preferredModels = ["gemini-3.0-flash", "gemini-3.0-flash-lite", "gemini-2.5-flash-lite", "gemini-2.0-flash-lite"];
 
     // Find the first available model from our preferred list
     for (const preferred of preferredModels) {
@@ -76,7 +76,7 @@ async function getAvailableModel(): Promise<string> {
       (error as Error).message
     );
     // Fallback to environment variable or default
-    return process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
+    return process.env.GEMINI_MODEL || "gemini-3.0-flash-lite";
   }
 }
 
