@@ -7,7 +7,7 @@ export type QuizQuestion = {
   explanation?: string;
 };
 
-export type Difficulty = "easy" | "medium" | "hard";
+export type Difficulty = "easy" | "medium" | "hard" | "extreme";
 
 function getGeminiApiKey() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -98,7 +98,8 @@ export async function callGemini(
     easy: "Create straightforward questions that test basic recall and understanding. Use clear language and obvious correct answers.",
     medium:
       "Create questions that require comprehension and some analysis. Include plausible distractors that test common misconceptions.",
-    hard: "Create challenging questions that require critical thinking, synthesis of information, and careful analysis. Use subtle distractors that require deep understanding.",
+    hard: "Create challenging questions that require synthesis of information across multiple sections, inference from implicit details, and careful analysis. Distractors should be plausible and test deep understanding of nuances.",
+    extreme: "Create extremely challenging questions that require multi-step analytical reasoning, identification of obscure or counter-intuitive details, and synthesis of complex information. All distractors must be highly sophisticated—factually plausible in isolation but contextually incorrect based on the document. Questions should feel like a professional certification exam.",
   };
 
   const prompt = `You are an expert instructional designer. Generate a JSON array of quiz questions based on the provided document.

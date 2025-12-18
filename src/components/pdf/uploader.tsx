@@ -241,6 +241,7 @@ export function PdfUploader() {
                 <option value="easy">🐣 Easy</option>
                 <option value="medium">🦁 Medium</option>
                 <option value="hard">🦖 Hard</option>
+                <option value="extreme">🌋 Extremely Hard</option>
               </select>
               <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-indigo-400">
                 ▼
