@@ -156,7 +156,7 @@ export function PdfUploader() {
           Upload your document
         </h2>
         <p className="mt-2 text-slate-500 dark:text-slate-400">
-          PDFs up to 15 MB. We'll turn it into a fun quiz!
+          PDFs up to 15 MB. We&apos;ll turn it into a fun quiz!
         </p>
       </div>
 

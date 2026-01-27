@@ -6,8 +6,21 @@ import type { CramResult, GoldenNugget, BlitzQuestion } from "@/types/cram";
 
 export default function CramDashboard() {
   const router = useRouter();
-  const [cramResult, setCramResult] = useState<CramResult | null>(null);
-  const [cramTitle, setCramTitle] = useState<string>("Cram Session");
+  const [cramResult] = useState<CramResult | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = sessionStorage.getItem("cramResult");
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as CramResult;
+    } catch (e) {
+      console.error("Failed to parse cram result:", e);
+      return null;
+    }
+  });
+  const [cramTitle] = useState<string>(() => {
+    if (typeof window === "undefined") return "Cram Session";
+    return sessionStorage.getItem("cramTitle") || "Cram Session";
+  });
   const [activeView, setActiveView] = useState<"summary" | "flashcards">(
     "summary"
   );
@@ -22,23 +35,8 @@ export default function CramDashboard() {
       }
     };
 
-    // Load the cram result from sessionStorage
-    const storedResult = sessionStorage.getItem("cramResult");
-    const storedTitle = sessionStorage.getItem("cramTitle");
-
-    if (storedResult) {
-      try {
-        const parsed = JSON.parse(storedResult) as CramResult;
-        setCramResult(parsed);
-        if (storedTitle) {
-          setCramTitle(storedTitle);
-        }
-      } catch (error) {
-        console.error("Failed to parse cram result:", error);
-        router.push("/dashboard");
-      }
-    } else {
-      // No cram result found, redirect to dashboard
+    // Handle missing data redirect
+    if (!cramResult && typeof window !== "undefined") {
       router.push("/dashboard");
     }
 
@@ -61,7 +59,7 @@ export default function CramDashboard() {
         window.removeEventListener("afterprint", handleAfterPrint);
       };
     }
-  }, [router]);
+  }, [router, cramResult]);
 
   const toggleCard = (index: number) => {
     setRevealedCards((prev) => {

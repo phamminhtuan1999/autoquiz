@@ -79,8 +79,14 @@ export default async function DashboardPage({
             ✗ Error processing payment: {paymentResult.error}
           </div>
         )}
-        <div className="mt-4 flex gap-4">
+        <div className="mt-4 flex gap-4 flex-wrap">
           <BuyCreditsButton />
+          <Link
+            href="/dashboard/mock-exam"
+            className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            🎓 Mock Exams
+          </Link>
           <Link
             href="/dashboard/leaderboard"
             className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"

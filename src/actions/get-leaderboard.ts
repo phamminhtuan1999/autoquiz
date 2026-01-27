@@ -50,13 +50,24 @@ export async function getLeaderboard(university: string | null = null) {
 
   const aggregation: Record<string, LeaderboardEntry> = {};
 
-  data?.forEach((attempt: any) => {
-    const profile = attempt.profiles;
+  interface AttemptData {
+    user_id: string;
+    is_correct: boolean;
+    profiles: {
+      full_name: string | null;
+      university: string | null;
+      email: string | null;
+    } | null;
+  }
+
+  data?.forEach((attempt) => {
+    const typedAttempt = attempt as unknown as AttemptData;
+    const profile = typedAttempt.profiles;
     if (!profile) return;
     
-    if (!aggregation[attempt.user_id]) {
-      aggregation[attempt.user_id] = {
-        userId: attempt.user_id,
+    if (!aggregation[typedAttempt.user_id]) {
+      aggregation[typedAttempt.user_id] = {
+        userId: typedAttempt.user_id,
         name: profile.full_name || profile.email || "Anonymous",
         university: profile.university || "Unknown",
         questionsAnswered: 0,
@@ -64,9 +75,9 @@ export async function getLeaderboard(university: string | null = null) {
       };
     }
     
-    aggregation[attempt.user_id].questionsAnswered += 1;
-    if (attempt.is_correct) {
-      aggregation[attempt.user_id].correctAnswers += 1;
+    aggregation[typedAttempt.user_id].questionsAnswered += 1;
+    if (typedAttempt.is_correct) {
+      aggregation[typedAttempt.user_id].correctAnswers += 1;
     }
   });
 

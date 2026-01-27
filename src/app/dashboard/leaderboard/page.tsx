@@ -13,10 +13,16 @@ type LeaderboardEntry = {
   correctAnswers: number;
 };
 
+type Profile = {
+  id: string;
+  university?: string;
+  full_name?: string;
+};
+
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [newUniversity, setNewUniversity] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -57,7 +63,7 @@ export default function LeaderboardPage() {
     setIsUpdating(true);
     const res = await updateUniversity(newUniversity);
     if (res.success) {
-      setUserProfile({ ...userProfile, university: newUniversity });
+      setUserProfile(prev => prev ? { ...prev, university: newUniversity } : null);
       // Refresh leaderboard to show current uni context if needed
       const lRes = await getLeaderboard();
       if (lRes.leaderboard) setLeaderboard(lRes.leaderboard);

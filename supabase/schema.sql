@@ -202,3 +202,75 @@ begin
 end;
 $$;
 
+
+
+-- Mock Exams table for premium comprehensive exams
+create table if not exists public.mock_exams (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  title text not null,
+  source_filenames text[] not null,  -- Array of PDF filenames
+  time_limit_minutes integer not null default 60,
+
+  -- Exam content (JSONB)
+  mcq_questions jsonb not null,      -- 30 MCQs
+  essay_questions jsonb not null,    -- 2 Essays with rubrics
+
+  -- Submission tracking
+  started_at timestamptz,
+  submitted_at timestamptz,
+  time_spent_seconds integer,
+
+  -- Results
+  mcq_answers jsonb,                 -- User's MCQ answers
+  essay_answers jsonb,               -- User's essay responses
+  mcq_score integer,                 -- Out of 30
+  essay_scores jsonb,                -- AI graded essay scores
+  total_score numeric(5,2),          -- Percentage
+  feedback jsonb,                    -- AI-generated feedback
+
+  status text not null default 'draft'
+    check (status in ('draft', 'in_progress', 'submitted', 'graded')),
+
+  created_at timestamptz not null default now()
+);
+
+-- RLS policies for mock_exams
+alter table public.mock_exams enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'mock_exams'
+      and policyname = 'Users see own mock exams'
+  ) then
+    create policy "Users see own mock exams"
+      on public.mock_exams
+      for select
+      using (auth.uid() = user_id);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'mock_exams'
+      and policyname = 'Users insert own mock exams'
+  ) then
+    create policy "Users insert own mock exams"
+      on public.mock_exams
+      for insert
+      with check (auth.uid() = user_id);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'mock_exams'
+      and policyname = 'Users update own mock exams'
+  ) then
+    create policy "Users update own mock exams"
+      on public.mock_exams
+      for update
+      using (auth.uid() = user_id);
+  end if;
+end;
+$$;
