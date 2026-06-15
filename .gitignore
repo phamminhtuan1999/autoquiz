@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent/AI tool files
+.agent/
+.serena/
+.shared/
+implement/
+lint_output.txt
