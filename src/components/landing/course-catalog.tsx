@@ -60,8 +60,11 @@ export const CourseCatalog = () => {
             <h3 className="mb-2 text-xl font-bold text-gray-800">{course.title}</h3>
             <div className="flex items-center justify-between text-sm font-medium text-gray-600">
               <span>{course.lessons} Lessons</span>
-              <button className="h-8 w-8 rounded-full bg-white text-indigo-600 shadow-sm transition-colors group-hover:bg-indigo-600 group-hover:text-white">
-                →
+              <button 
+                aria-label="Explore course"
+                className="h-8 w-8 rounded-full bg-white text-indigo-600 shadow-sm transition-colors group-hover:bg-indigo-600 group-hover:text-white"
+              >
+                <span aria-hidden="true">→</span>
               </button>
             </div>
           </ClayCard>

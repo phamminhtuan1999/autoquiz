@@ -46,3 +46,6 @@ next-env.d.ts
 .shared/
 implement/
 lint_output.txt
+
+# Portfolio generated assets (screenshots, AI-generated docs).
+portfolio/

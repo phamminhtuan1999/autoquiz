@@ -41,7 +41,7 @@ export const Testimonials = () => {
               {t.avatar}
             </div>
             <div className="pt-8">
-              <p className="mb-6 text-lg italic text-slate-600">&quot;{t.text}&quot;</p>
+              <p className="mb-6 text-lg italic text-slate-600">“{t.text}”</p>
               <h4 className="font-bold text-gray-900">{t.name}</h4>
               <span className="text-sm font-bold uppercase tracking-wide text-indigo-400">{t.role}</span>
             </div>

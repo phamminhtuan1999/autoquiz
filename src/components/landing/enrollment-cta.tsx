@@ -15,7 +15,7 @@ export const EnrollmentCTA = () => {
           </h2>
           <p className="mx-auto mb-10 max-w-2xl text-lg text-indigo-100">
             Join thousands of students who have transformed their study habits. 
-            Upload your first document today and start quizing in seconds!
+            Upload your first document today and start quizzing in seconds!
           </p>
           
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">

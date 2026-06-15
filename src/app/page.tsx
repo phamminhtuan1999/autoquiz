@@ -5,6 +5,7 @@ import { CourseCatalog } from "@/components/landing/course-catalog";
 import { ProgressTrackingDemo } from "@/components/landing/progress-tracking";
 import { Testimonials } from "@/components/landing/testimonials";
 import { EnrollmentCTA } from "@/components/landing/enrollment-cta";
+import { Hero3DCanvas } from "@/components/landing/hero-3d-canvas";
 
 export default function Home() {
   return (
@@ -12,24 +13,32 @@ export default function Home() {
       <main className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-8 sm:px-8">
         
         {/* Hero Section */}
-        <header className="relative flex flex-col items-center gap-8 py-16 text-center lg:py-24">
-          <div className="relative z-10 max-w-3xl">
-            <span className="mb-4 inline-block rounded-full bg-indigo-100 px-4 py-1.5 text-sm font-bold tracking-wide text-indigo-600 shadow-sm dark:bg-indigo-900/50 dark:text-indigo-300">
-              ✨ Making Learning Magical Again
-            </span>
-            <h1 className="mb-6 text-5xl font-extrabold leading-tight text-[#1E1B4B] dark:text-slate-100 sm:text-6xl lg:text-7xl">
-              Turn Boring PDFs into <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">Playful Quizzes</span>
-            </h1>
-            <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-600 dark:text-slate-300 sm:text-xl">
-              Upload any document and watch as AI transforms it into an interactive game. 
-              Track your progress, earn achievements, and master any subject in minutes.
-            </p>
-            
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/dashboard" className="clay-button transform transition-all hover:-translate-y-1">
-                Start Learning for Free
-              </Link>
+        <header className="relative py-12 lg:py-20">
+          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+            {/* Left Column (Copy) */}
+            <div className="relative z-10 lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left">
+              <span className="mb-4 inline-block rounded-full bg-indigo-100 px-4 py-1.5 text-sm font-bold tracking-wide text-indigo-600 shadow-sm dark:bg-indigo-900/50 dark:text-indigo-300">
+                ✨ Making Learning Magical Again
+              </span>
+              <h1 className="mb-6 text-4xl font-extrabold leading-tight text-[#1E1B4B] dark:text-slate-100 sm:text-5xl lg:text-6xl xl:text-7xl">
+                Turn Boring PDFs into <br className="hidden sm:inline" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">Playful Quizzes</span>
+              </h1>
+              <p className="mb-10 max-w-2xl text-lg text-slate-600 dark:text-slate-300 sm:text-xl">
+                Upload any document and watch as AI transforms it into an interactive game. 
+                Track your progress, earn achievements, and master any subject in minutes.
+              </p>
+              
+              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Link href="/dashboard" className="clay-button transform transition-all hover:-translate-y-1">
+                  Start Learning for Free
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column (3D Interactive Canvas) */}
+            <div className="relative lg:col-span-5 flex items-center justify-center">
+              <Hero3DCanvas />
             </div>
           </div>
 

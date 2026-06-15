@@ -66,14 +66,14 @@ export function PdfUploader() {
     }
 
     startTransition(async () => {
-      setStatus("Extracting PDF text...");
+      setStatus("Extracting PDF text…");
       setProgress(10);
       setError(null);
 
       try {
         const documentText = await extractTextFromPdf(file);
         setProgress(30);
-        setStatus("Generating quiz questions...");
+        setStatus("Generating quiz questions…");
         
         const nextQuiz = await generateQuiz({
           documentText,
@@ -121,7 +121,7 @@ export function PdfUploader() {
   if (authLoading) {
     return (
       <section className="w-full space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-slate-500">Loading...</p>
+        <p className="text-sm text-slate-500">Loading…</p>
       </section>
     );
   }
@@ -258,7 +258,7 @@ export function PdfUploader() {
             disabled={isPending || !file}
             className="clay-button w-full justify-center !text-lg !py-4"
           >
-            {isPending ? "✨ Working Magic..." : "✨ Generate Quiz"}
+            {isPending ? "✨ Working Magic…" : "✨ Generate Quiz"}
           </button>
 
           <CramButton file={file} disabled={isPending} />

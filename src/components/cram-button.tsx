@@ -24,14 +24,14 @@ export function CramButton({ file, disabled }: CramButtonProps) {
     }
 
     startTransition(async () => {
-      setStatus("Extracting PDF text...");
+      setStatus("Extracting PDF text…");
       setProgress(10);
       setError(null);
 
       try {
         const documentText = await extractTextFromPdf(file);
         setProgress(30);
-        setStatus("Generating Cram Session... (This costs 3 credits)");
+        setStatus("Generating Cram Session… (This costs 3 credits)");
 
         const cramResult = await generateCram({
           documentText,
@@ -65,7 +65,7 @@ export function CramButton({ file, disabled }: CramButtonProps) {
         className="inline-flex w-full items-center justify-center rounded-md bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:from-orange-600 hover:to-red-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className="mr-2">🚨</span>
-        {isPending ? "Generating Cram Session..." : "CRAM MODE (3 Credits)"}
+        {isPending ? "Generating Cram Session…" : "CRAM MODE (3 Credits)"}
       </button>
 
       {progress > 0 && progress < 100 && (
