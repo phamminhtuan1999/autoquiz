@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -104,26 +105,34 @@ export function AppSidebar({ username }: AppSidebarProps) {
         </ul>
       </nav>
 
-      {/* User */}
-      {username && (
-        <div className="border-t border-[var(--border)] px-3 py-3">
-          <div className="flex items-center justify-between gap-2">
+      {/* Footer: user + actions */}
+      <div className="border-t border-[var(--border)] px-3 py-3">
+        <div className="flex items-center justify-between gap-2">
+          {username ? (
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent-subtle)] text-[10px] font-bold text-[var(--accent)]">
                 {username[0].toUpperCase()}
               </div>
               <span className="truncate font-mono text-xs text-[var(--fg-muted)]">{username}</span>
             </div>
-            <button
-              onClick={handleSignOut}
-              title="Sign out"
-              className="flex-shrink-0 rounded p-1 text-[var(--fg-faint)] transition-colors hover:text-[var(--fg-muted)]"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
+          ) : (
+            <span className="text-xs text-[var(--fg-faint)]">Not signed in</span>
+          )}
+          <div className="flex flex-shrink-0 items-center gap-1.5">
+            <ThemeToggle />
+            {username && (
+              <button
+                onClick={handleSignOut}
+                title="Sign out"
+                aria-label="Sign out"
+                className="flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] text-[var(--fg-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--fg)]"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </aside>
   );
 

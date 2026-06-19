@@ -61,43 +61,49 @@
   --r-xl:  20px;
 }
 
-/* Dark mode: value swap only — same variable names */
+/* Dark mode: value swap only — same variable names.
+   Cool charcoal with a faint indigo tint (toward the brand accent),
+   not warm brown — warm-inverted-to-brown reads as muddy/dingy. */
 .dark {
   /* HeroUI dark bridges */
   --background: var(--bg);
   --surface:    var(--bg-subtle);
 
-  --bg:              #1c1a17;
-  --bg-subtle:       #232018;
-  --bg-muted:        #2a271f;
-  --bg-inset:        #252218;
-  --border:          #38352d;
-  --border-strong:   #48453b;
-  --border-stronger: #5a5648;
-  --fg:              #f5f3ef;
+  /* Neutral ramp — cool charcoal, ~0.01 chroma toward indigo */
+  --bg:              #131318;
+  --bg-subtle:       #1a1a21;
+  --bg-muted:        #24242e;
+  --bg-inset:        #1d1d25;
+  --border:          #2c2c37;
+  --border-strong:   #3b3b48;
+  --border-stronger: #4e4e5d;
+  --fg:              #ececf2;
   --fg-strong:       #ffffff;
-  --fg-muted:        #b8b3a9;
-  --fg-subtle:       #918b83;
-  --fg-faint:        #635e57;
+  --fg-muted:        #abacba;
+  --fg-subtle:       #83838f;
+  --fg-faint:        #5a5b66;
 
-  --accent:          #6366f1;
-  --accent-hover:    #818cf8;
-  --accent-subtle:   #1e1b4b;
-  --accent-border:   #3730a3;
+  /* Accent — indigo, brightened so it pops on charcoal */
+  --accent:          #7c82f5;
+  --accent-hover:    #9499f8;
+  --accent-subtle:   #1f2040;
+  --accent-border:   #383a66;
 
+  /* Spark — amber */
   --amber:           #fbbf24;
-  --amber-bg:        #291d06;
-  --amber-border:    #78490e;
+  --amber-bg:        #2a2107;
+  --amber-border:    #574411;
 
+  /* Semantic */
   --success:         #4ade80;
-  --success-bg:      #052e16;
-  --success-border:  #14532d;
+  --success-bg:      #0f261a;
+  --success-border:  #1d4a31;
   --danger:          #f87171;
-  --danger-bg:       #450a0a;
-  --danger-border:   #7f1d1d;
+  --danger-bg:       #2b1416;
+  --danger-border:   #5a2024;
   --info:            #60a5fa;
-  --info-bg:         #0c1a3b;
-  --info-border:     #1e3a5f;
+  --info-bg:         #11213c;
+  --info-border:     #25426b;
 }
 
 /* US-002: Typography — Sora / Plus Jakarta Sans / Geist Mono */
@@ -112,7 +118,7 @@
   /* Flat card — clay-card preserved as a stub so existing JSX doesn't break;
      neumorphic shadows and gradient background are gone. Screens restyle in E02–E09. */
   .clay-card {
-    @apply bg-white dark:bg-[#232018] border border-[var(--border)] dark:border-[var(--border)];
+    @apply bg-white dark:bg-[var(--bg-subtle)] border border-[var(--border)] dark:border-[var(--border)];
     border-radius: var(--r-lg);
     transition: border-color 0.2s ease;
   }
