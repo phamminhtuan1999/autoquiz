@@ -1,76 +1,104 @@
 import Link from "next/link";
 import { PdfUploader } from "@/components/pdf/uploader";
-import { ClayCard } from "@/components/ui/clay-card";
-import { CourseCatalog } from "@/components/landing/course-catalog";
-import { ProgressTrackingDemo } from "@/components/landing/progress-tracking";
-import { Testimonials } from "@/components/landing/testimonials";
-import { EnrollmentCTA } from "@/components/landing/enrollment-cta";
 import { Hero3DCanvas } from "@/components/landing/hero-3d-canvas";
 
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden">
-      <main className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-8 sm:px-8">
-        
-        {/* Hero Section */}
-        <header className="relative py-12 lg:py-20">
-          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
-            {/* Left Column (Copy) */}
-            <div className="relative z-10 lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left">
-              <span className="mb-4 inline-block rounded-full bg-indigo-100 px-4 py-1.5 text-sm font-bold tracking-wide text-indigo-600 shadow-sm dark:bg-indigo-900/50 dark:text-indigo-300">
-                ✨ Making Learning Magical Again
-              </span>
-              <h1 className="mb-6 text-4xl font-extrabold leading-tight text-[#1E1B4B] dark:text-slate-100 sm:text-5xl lg:text-6xl xl:text-7xl">
-                Turn Boring PDFs into <br className="hidden sm:inline" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">Playful Quizzes</span>
-              </h1>
-              <p className="mb-10 max-w-2xl text-lg text-slate-600 dark:text-slate-300 sm:text-xl">
-                Upload any document and watch as AI transforms it into an interactive game. 
-                Track your progress, earn achievements, and master any subject in minutes.
-              </p>
-              
-              <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href="/dashboard" className="clay-button transform transition-all hover:-translate-y-1">
-                  Start Learning for Free
-                </Link>
-              </div>
-            </div>
+      <main className="mx-auto max-w-5xl px-4 py-16 sm:px-8">
 
-            {/* Right Column (3D Interactive Canvas) */}
-            <div className="relative lg:col-span-5 flex items-center justify-center">
-              <Hero3DCanvas />
+        {/* Hero */}
+        <header className="grid gap-12 lg:grid-cols-12 lg:items-center lg:py-8">
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            <span className="inline-flex w-fit rounded-full border border-[var(--accent-border)] bg-[var(--accent-subtle)] px-3 py-1 font-mono text-xs text-[var(--accent)]">
+              Source-grounded · Review-first
+            </span>
+
+            <h1 className="font-display text-4xl font-bold leading-tight text-[var(--fg-strong)] sm:text-5xl lg:text-6xl">
+              Upload a document.
+              <br />
+              AI drafts the quiz.
+              <br />
+              <span className="text-[var(--accent)]">You approve it.</span>
+            </h1>
+
+            <p className="max-w-lg text-base leading-relaxed text-[var(--fg-muted)]">
+              Every question cites the exact passage it came from. Confidence is shown
+              honestly. Nothing reaches students until you review it.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center rounded-[var(--r-md)] bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
+              >
+                Get started — it&apos;s free
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg)] px-5 py-2.5 text-sm font-semibold text-[var(--fg)] transition-colors hover:bg-[var(--bg-subtle)]"
+              >
+                View demo
+              </Link>
             </div>
           </div>
 
-          {/* Decorative Floating Blobs */}
-          <div className="absolute top-0 left-0 -z-10 h-72 w-72 rounded-full bg-purple-200/50 blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 -z-10 h-96 w-96 rounded-full bg-blue-200/50 blur-3xl animate-pulse delay-700" />
+          <div className="lg:col-span-5 flex items-center justify-center">
+            <Hero3DCanvas />
+          </div>
         </header>
 
-        {/* Uploader Section */}
-        <section className="relative z-20 -mt-8">
-          <ClayCard className="mx-auto max-w-3xl border-4 border-white/60 bg-white/90 backdrop-blur-sm">
-            <div className="mb-6 text-center">
-              <h3 className="text-xl font-bold text-gray-800">Try it out right now!</h3>
-              <p className="text-sm text-gray-500">Drop a PDF below to generate your first quiz pack.</p>
+        {/* Try it */}
+        <section className="mt-20">
+          <div className="rounded-[var(--r-xl)] border border-[var(--border)] bg-[var(--bg-subtle)] p-8">
+            <div className="mb-6 space-y-1">
+              <h2 className="font-display text-lg font-semibold text-[var(--fg-strong)]">
+                Try it now
+              </h2>
+              <p className="text-sm text-[var(--fg-muted)]">
+                Drop a PDF. Questions drafted in under 30 seconds. Review before publishing.
+              </p>
             </div>
             <PdfUploader />
-          </ClayCard>
+          </div>
         </section>
 
-        {/* Feature Sections */}
-        <CourseCatalog />
-        <ProgressTrackingDemo />
-        <Testimonials />
-        <EnrollmentCTA />
+        {/* Value props */}
+        <section className="mt-20 grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              heading: "Grounded in the source",
+              body: "Every question cites the passage it came from. Students see the source; so do you.",
+            },
+            {
+              heading: "AI drafts, you approve",
+              body: "Nothing publishes until you review it. Confidence scores flag questions that need a closer look.",
+            },
+            {
+              heading: "Calm, not loud",
+              body: "No confetti, no mascots. Real progress shown clearly — score trends, mastery over time.",
+            },
+          ].map((card) => (
+            <div
+              key={card.heading}
+              className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-6"
+            >
+              <h3 className="font-display text-sm font-semibold text-[var(--fg-strong)]">
+                {card.heading}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--fg-muted)]">{card.body}</p>
+            </div>
+          ))}
+        </section>
 
       </main>
-      
-      {/* Footer */}
-      <footer className="border-t border-indigo-100 bg-white/50 py-12 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-4 text-center text-slate-500">
-          <p className="mb-4 font-heading font-bold text-indigo-300 text-xl">AutoQuiz</p>
-          <p>© {new Date().getFullYear()} AutoQuiz. Made with 💜 for learners everywhere.</p>
+
+      <footer className="mt-24 border-t border-[var(--border)] py-10">
+        <div className="mx-auto max-w-5xl px-4 text-center">
+          <p className="font-display text-sm font-semibold text-[var(--fg-faint)]">AutoQuiz</p>
+          <p className="mt-1 text-xs text-[var(--fg-faint)]">
+            © {new Date().getFullYear()} AutoQuiz.
+          </p>
         </div>
       </footer>
     </div>

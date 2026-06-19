@@ -4,35 +4,30 @@ import type { CramResult, GoldenNugget, BlitzQuestion } from "@/types/cram";
 
 export function CramModeDisplay({ cramResult }: { cramResult: CramResult }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* Golden Nuggets */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span>📝</span>
-            Golden Nuggets
+      <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-6">
+        <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <h2 className="font-display text-base font-semibold text-[var(--fg-strong)]">
+            Key concepts
           </h2>
-          <span className="text-sm text-slate-500 font-medium">
-            {cramResult.summary.length} Facts
+          <span className="font-mono text-xs text-[var(--fg-faint)]">
+            {cramResult.summary.length} facts
           </span>
         </div>
         <div className="space-y-3">
-          {cramResult.summary.map((nugget: GoldenNugget, index) => (
+          {cramResult.summary.map((nugget: GoldenNugget, index: number) => (
             <div
               key={index}
-              className="border border-orange-200 bg-orange-50/50 rounded-lg p-4"
+              className="rounded-[var(--r-sm)] border border-[var(--amber-border)] bg-[var(--amber-bg)] p-4"
             >
               <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
-                  {index + 1}
+                <span className="font-mono text-xs font-semibold text-[var(--amber)] shrink-0 mt-0.5">
+                  {String(index + 1).padStart(2, "0")}
                 </span>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-900 text-sm mb-1">
-                    {nugget.topic}
-                  </h3>
-                  <p className="text-sm text-slate-700 leading-relaxed">
-                    {nugget.content}
-                  </p>
+                <div>
+                  <p className="mb-1 text-sm font-semibold text-[var(--fg-strong)]">{nugget.topic}</p>
+                  <p className="text-sm leading-relaxed text-[var(--fg-muted)]">{nugget.content}</p>
                 </div>
               </div>
             </div>
@@ -40,31 +35,31 @@ export function CramModeDisplay({ cramResult }: { cramResult: CramResult }) {
         </div>
       </div>
 
-      {/* Blitz Questions */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span>⚡</span>
-            Blitz Flashcards
+      {/* Blitz Flashcards */}
+      <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-6">
+        <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-3">
+          <h2 className="font-display text-base font-semibold text-[var(--fg-strong)]">
+            Quick recall
           </h2>
-          <span className="text-sm text-slate-500 font-medium">
-            {cramResult.blitz_questions.length} Questions
+          <span className="font-mono text-xs text-[var(--fg-faint)]">
+            {cramResult.blitz_questions.length} questions
           </span>
         </div>
-        <div className="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto">
-          {cramResult.blitz_questions.map((card: BlitzQuestion, index) => (
-            <div key={index} className="border border-slate-200 rounded-lg p-4">
+        <div className="max-h-[calc(100vh-400px)] space-y-3 overflow-y-auto">
+          {cramResult.blitz_questions.map((card: BlitzQuestion, index: number) => (
+            <div
+              key={index}
+              className="rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg-subtle)] p-4"
+            >
               <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center">
-                  {index + 1}
+                <span className="font-mono text-xs font-semibold text-[var(--fg-faint)] shrink-0 mt-0.5">
+                  {String(index + 1).padStart(2, "0")}
                 </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 text-sm mb-2">
-                    {card.question}
-                  </p>
-                  <div className="mt-2 pt-2 border-t border-slate-200">
-                    <p className="text-sm text-slate-700 bg-slate-50 rounded p-2">
-                      <strong className="text-slate-900">Answer:</strong>{" "}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-[var(--fg)]">{card.question}</p>
+                  <div className="border-t border-[var(--border)] pt-2">
+                    <p className="text-sm text-[var(--fg-muted)]">
+                      <span className="font-semibold text-[var(--fg)]">Answer: </span>
                       {card.answer}
                     </p>
                   </div>

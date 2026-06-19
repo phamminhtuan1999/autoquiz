@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { ClayCard } from "@/components/ui/clay-card";
+import { Button } from "@heroui/react";
 import type { QuizQuestion } from "@/lib/gemini";
 
 type QuizResultsProps = {
@@ -11,143 +11,103 @@ type QuizResultsProps = {
   onBackToPreview: () => void;
 };
 
-export function QuizResults({ 
-  questions, 
-  userAnswers, 
-  onRetakeTest, 
-  onBackToPreview 
+function getGrade(pct: number) {
+  if (pct >= 90) return { grade: "A+", color: "var(--success)" };
+  if (pct >= 80) return { grade: "B",  color: "var(--accent)"  };
+  if (pct >= 70) return { grade: "C",  color: "var(--amber)"   };
+  if (pct >= 60) return { grade: "D",  color: "var(--warning)" };
+  return             { grade: "F",  color: "var(--danger)"  };
+}
+
+export function QuizResults({
+  questions,
+  userAnswers,
+  onRetakeTest,
+  onBackToPreview,
 }: QuizResultsProps) {
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll to results when component mounts
-    if (resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  const calculateScore = () => {
-    let correct = 0;
-    questions.forEach((question, index) => {
-      if (userAnswers[index] === question.answer) {
-        correct++;
-      }
-    });
-    return correct;
-  };
-
-  const score = calculateScore();
-  const percentage = Math.round((score / questions.length) * 100);
-  const passed = percentage >= 70;
-
-  const getGrade = () => {
-    if (percentage >= 90) return { grade: "A+", color: "text-green-500", emoji: "🏆" };
-    if (percentage >= 80) return { grade: "B", color: "text-blue-500", emoji: "🎉" };
-    if (percentage >= 70) return { grade: "C", color: "text-yellow-500", emoji: "👍" };
-    if (percentage >= 60) return { grade: "D", color: "text-orange-500", emoji: "😬" };
-    return { grade: "F", color: "text-red-500", emoji: "🙈" };
-  };
-
-  const { grade, color, emoji } = getGrade();
+  const correct = questions.filter((q, i) => userAnswers[i] === q.answer).length;
+  const pct = Math.round((correct / questions.length) * 100);
+  const { grade, color } = getGrade(pct);
 
   return (
-    <div ref={resultsRef} className="space-y-8 animate-in slide-in-from-bottom-8 duration-700">
-      {/* Report Card */}
-      <ClayCard className="text-center overflow-hidden relative !p-0">
-        <div className={`absolute top-0 left-0 w-full h-32 ${passed ? 'bg-indigo-100 dark:bg-indigo-900/50' : 'bg-red-100 dark:bg-red-900/50'} z-0`} />
-        
-        <div className="relative z-10 pt-16 px-8 pb-8">
-          <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center rounded-full bg-white shadow-lg border-4 border-white dark:bg-slate-800 dark:border-slate-700">
-            <span className={`text-6xl font-black ${color}`} style={{ textShadow: '2px 2px 0px rgba(0,0,0,0.1)' }}>
-              {grade}
-            </span>
-          </div>
-
-          <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100 mb-2">
-            {passed ? "Way to go! 🎉" : "Keep trying! 💪"}
-          </h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium">
-            You scored {score} out of {questions.length} ({percentage}%)
-          </p>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-            <button
-              onClick={onRetakeTest}
-              className="clay-button flex-1 justify-center !bg-indigo-600 !text-white"
-            >
-              🔄 Retake Quiz
-            </button>
-            <button
-              onClick={onBackToPreview}
-              className="clay-button flex-1 justify-center !bg-white !text-slate-600 hover:!bg-slate-50"
-            >
-              📚 Review Study
-            </button>
-          </div>
+    <div ref={ref} className="space-y-8">
+      {/* Score card */}
+      <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-8 text-center">
+        <div
+          className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full border-2 border-[var(--border)]"
+          style={{ background: `color-mix(in oklab, ${color} 10%, var(--bg))` }}
+        >
+          <span className="font-display text-4xl font-bold" style={{ color }}>
+            {grade}
+          </span>
         </div>
-      </ClayCard>
+        <p className="font-display text-xl font-semibold text-[var(--fg-strong)]">
+          {pct >= 70 ? "Well done." : "Keep at it."}
+        </p>
+        <p className="mt-1 font-mono text-sm text-[var(--fg-muted)]">
+          {correct}/{questions.length} correct — {pct}%
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          <Button variant="outline" onPress={onBackToPreview}>
+            Review study material
+          </Button>
+          <Button variant="primary" onPress={onRetakeTest}>
+            Retake quiz
+          </Button>
+        </div>
+      </div>
 
-      {/* Detailed Results */}
-      <div className="space-y-6">
-        <h4 className="text-xl font-bold text-slate-800 dark:text-slate-200 ml-2">
-          Detailed Breakdown
+      {/* Detailed breakdown */}
+      <div className="space-y-3">
+        <h4 className="font-display text-base font-semibold text-[var(--fg)]">
+          Breakdown
         </h4>
-        {questions.map((question, index) => {
-          const userAnswer = userAnswers[index];
-          const isCorrect = userAnswer === question.answer;
-          
+        {questions.map((q, i) => {
+          const userAns = userAnswers[i];
+          const isCorrect = userAns === q.answer;
           return (
             <div
-              key={index}
-              className={`
-                group relative rounded-2xl border-2 p-6 transition-all duration-300
-                ${isCorrect 
-                  ? "border-green-200 bg-green-50/50 hover:border-green-300 dark:border-green-900/30 dark:bg-green-900/10" 
-                  : "border-red-200 bg-red-50/50 hover:border-red-300 dark:border-red-900/30 dark:bg-red-900/10"
-                }
-              `}
+              key={i}
+              className={`rounded-[var(--r-md)] border p-5 ${
+                isCorrect
+                  ? "border-[var(--success-border)] bg-[var(--success-bg)]"
+                  : "border-[var(--danger-border)] bg-[var(--danger-bg)]"
+              }`}
             >
-              <div className="flex items-start gap-4">
-                <div className={`
-                  flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg shadow-sm rotate-3
-                  ${isCorrect 
-                    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" 
-                    : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
-                  }
-                `}>
-                  {isCorrect ? "✅" : "❌"}
-                </div>
-                
-                <div className="flex-1">
-                  <p className="font-bold text-lg text-slate-800 dark:text-slate-200 mb-4">
-                    {question.question}
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Your Answer</span>
-                      <span className={`px-3 py-1 rounded-lg font-bold text-sm ${isCorrect ? 'bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200'}`}>
-                        {userAnswer || "Not answered"}
+              <div className="flex items-start gap-3">
+                <span
+                  className="font-mono text-xs font-semibold shrink-0 mt-0.5"
+                  style={{ color: isCorrect ? "var(--success)" : "var(--danger)" }}
+                >
+                  {isCorrect ? "✓" : "✗"} {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-[var(--fg-strong)]">{q.question}</p>
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span className="text-[var(--fg-muted)]">
+                      Your answer:{" "}
+                      <span className="font-medium" style={{ color: isCorrect ? "var(--success)" : "var(--danger)" }}>
+                        {userAns || "—"}
                       </span>
-                    </div>
-                    
+                    </span>
                     {!isCorrect && (
-                      <div className="flex flex-wrap gap-2 items-center animate-in fade-in slide-in-from-left-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Correct Answer</span>
-                        <span className="px-3 py-1 rounded-lg font-bold text-sm bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          {question.answer}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {question.explanation && (
-                      <div className="mt-4 rounded-xl bg-white p-4 text-sm text-slate-600 shadow-sm border border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
-                        <span className="mb-1 block text-xs font-black uppercase text-indigo-400">Explanation</span>
-                        {question.explanation}
-                      </div>
+                      <span className="text-[var(--fg-muted)]">
+                        Correct:{" "}
+                        <span className="font-medium text-[var(--success)]">{q.answer}</span>
+                      </span>
                     )}
                   </div>
+                  {q.explanation && (
+                    <p className="border-l-2 border-[var(--accent-border)] pl-3 text-xs text-[var(--fg-muted)] italic">
+                      {q.explanation}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
