@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@heroui/react";
 import { PdfMultiSelector } from "@/components/mock-exam/pdf-multi-selector";
 import { generateMockExam } from "@/actions/generate-mock-exam";
 import type { GenerateMockExamInput } from "@/types/mock-exam";
@@ -18,30 +19,26 @@ export default function NewMockExamPage() {
 
   const handleGenerate = () => {
     if (documents.length === 0) {
-      setError("Please select at least one PDF document");
+      setError("Select at least one PDF document.");
       return;
     }
-
     if (!examTitle.trim()) {
-      setError("Please provide a title for the mock exam");
+      setError("Provide a title for the exam.");
       return;
     }
 
     startTransition(async () => {
-      setProgress("Initializing exam generation...");
+      setProgress("Initializing exam generation…");
       setError(null);
-
       try {
         const input: GenerateMockExamInput = {
           documentTexts: documents,
           title: examTitle,
           difficulty,
         };
-
-        setProgress("Creating comprehensive exam questions...");
+        setProgress("Creating exam questions…");
         const result = await generateMockExam(input);
-
-        setProgress("Finalizing exam setup...");
+        setProgress("Finalizing…");
         router.push(`/dashboard/mock-exam/${result.examId}`);
       } catch (err) {
         setError((err as Error).message);
@@ -50,180 +47,128 @@ export default function NewMockExamPage() {
     });
   };
 
-  const canGenerate = documents.length >= 1 && documents.every(doc => doc.text) && examTitle.trim() && !isPending;
+  const canGenerate =
+    documents.length >= 1 && documents.every((d) => d.text) && examTitle.trim() && !isPending;
 
-  const getTotalCharacters = () => {
-    return documents.reduce((sum, doc) => sum + doc.text.length, 0);
-  };
-
-  const getEstimatedTime = () => {
-    const charCount = getTotalCharacters();
-    // Rough estimate: ~15K chars per minute of processing
-    return Math.max(30, Math.ceil(charCount / 15000));
-  };
+  const totalChars = documents.reduce((s, d) => s + d.text.length, 0);
+  const estSeconds = Math.max(30, Math.ceil(totalChars / 15000));
+  const hasPreview = documents.length > 0 && documents.every((d) => d.text);
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-8 px-4 py-12 sm:px-8">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
-          Create Mock Exam
-        </h1>
-        <p className="text-lg text-slate-600 dark:text-slate-400">
-          Combine your lecture PDFs into a comprehensive timed exam
-        </p>
+    <div className="mx-auto max-w-2xl space-y-8 px-4 py-12 sm:px-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[var(--fg-strong)]">New mock exam</h1>
+          <p className="mt-1 text-sm text-[var(--fg-muted)]">60-minute timed exam from your documents. Costs 5 credits.</p>
+        </div>
+        <Link href="/dashboard/mock-exam" className="text-sm text-[var(--accent)] hover:underline">
+          Cancel
+        </Link>
       </div>
 
-      {/* Form */}
-      <div className="space-y-8">
-        {/* Title Input */}
+      <div className="space-y-5">
+        {/* Title */}
         <div>
-          <label htmlFor="exam-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Exam Title
+          <label htmlFor="exam-title" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--fg-subtle)]">
+            Title
           </label>
           <input
             id="exam-title"
             type="text"
             value={examTitle}
             onChange={(e) => setExamTitle(e.target.value)}
-            placeholder="e.g., Midterm Exam: Biology 101"
-            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:bg-slate-800 dark:border-slate-700 dark:focus:border-indigo-500"
-          />
-        </div>
-
-        {/* PDF Selector */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Select PDF Documents
-          </label>
-          <PdfMultiSelector
-            onDocumentsChange={setDocuments}
+            placeholder="e.g., Midterm — Biology 101"
             disabled={isPending}
+            className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none transition-colors focus:border-[var(--accent-border)] disabled:opacity-50"
           />
         </div>
 
-        {/* Difficulty Level */}
+        {/* Documents */}
         <div>
-          <label htmlFor="difficulty" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Exam Difficulty
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--fg-subtle)]">
+            Source documents
+          </label>
+          <PdfMultiSelector onDocumentsChange={setDocuments} disabled={isPending} />
+        </div>
+
+        {/* Difficulty */}
+        <div>
+          <label htmlFor="difficulty" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--fg-subtle)]">
+            Difficulty
           </label>
           <select
             id="difficulty"
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value as "standard" | "challenging")}
             disabled={isPending}
-            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:bg-slate-800 dark:border-slate-700 dark:focus:border-indigo-500"
+            className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none transition-colors focus:border-[var(--accent-border)] disabled:opacity-50"
           >
-            <option value="standard">📚 Standard - Comprehensive coverage of material</option>
-            <option value="challenging">🔥 Challenging - Advanced critical thinking questions</option>
+            <option value="standard">Standard — comprehensive coverage</option>
+            <option value="challenging">Challenging — advanced critical thinking</option>
           </select>
         </div>
-
-        {/* Exam Preview */}
-        {documents.length > 0 && documents.every(doc => doc.text) && (
-          <div className="bg-slate-50 rounded-xl p-6 dark:bg-slate-800/50">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
-              Exam Preview
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">📚 Content</h4>
-                <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                  <li>• {documents.length} PDF document{documents.length !== 1 ? 's' : ''}</li>
-                  <li>• {getTotalCharacters().toLocaleString()} total characters</li>
-                  <li>• 60-minute time limit</li>
-                  <li>• 30 Multiple Choice Questions</li>
-                  <li>• 2 Essay Questions with rubrics</li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">💰 Cost & Time</h4>
-                <ul className="space-y-1 text-sm text-slate-600 dark:text-slate-400">
-                  <li>• <span className="font-bold">5 credits</span> to generate</li>
-                  <li>• ~{getEstimatedTime()} seconds to process</li>
-                  <li>• AI-powered grading included</li>
-                  <li>• Detailed feedback report</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-4 p-4 bg-indigo-50 rounded-lg dark:bg-indigo-900/20">
-              <p className="text-sm text-indigo-800 dark:text-indigo-300">
-                <span className="font-bold">AI will create:</span> Questions that test comprehension, critical thinking, and application of concepts across all selected materials.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4 text-center text-sm font-bold text-red-600 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-            ❌ {error}
-          </div>
-        )}
-
-        {/* Progress Display */}
-        {progress && (
-          <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-center text-sm text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
-            <div className="animate-spin inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mr-2"></div>
-            {progress}
-          </div>
-        )}
-
-        {/* Generate Button */}
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            className={`
-              px-8 py-4 rounded-xl font-bold text-lg transition-all
-              ${canGenerate
-                ? "bg-indigo-500 text-white hover:bg-indigo-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed"
-              }
-            `}
-          >
-            {isPending ? "🎓 Generating Exam..." : "✨ Generate Mock Exam"}
-          </button>
-        </div>
       </div>
 
-      {/* Instructions */}
-      <div className="bg-slate-50 rounded-xl p-6 dark:bg-slate-800/50">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
-          📖 How It Works
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600 dark:text-slate-400">
-          <div className="space-y-3">
-            <h4 className="font-medium text-slate-700 dark:text-slate-300">Before You Start</h4>
-            <ul className="space-y-2">
-              <li>• Choose clear, academic PDFs with relevant content</li>
-              <li>• Ensure documents are readable (not scanned images)</li>
-              <li>• Select materials that cover related topics</li>
-              <li>• Check you have at least 5 credits available</li>
+      {/* Preview */}
+      {hasPreview && (
+        <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-subtle)] p-5">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[var(--fg-subtle)]">Exam preview</p>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <ul className="space-y-1 text-[var(--fg-muted)]">
+              <li>{documents.length} document{documents.length !== 1 ? "s" : ""}</li>
+              <li>{totalChars.toLocaleString()} characters</li>
+              <li>30 MCQs + 2 essays</li>
+              <li>60-minute timer</li>
             </ul>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-medium text-slate-700 dark:text-slate-300">What You&apos;ll Get</h4>
-            <ul className="space-y-2">
-              <li>• 30 multiple choice questions with explanations</li>
-              <li>• 2 essay questions with detailed grading rubrics</li>
-              <li>• 60-minute timer with progress tracking</li>
-              <li>• AI-powered grading with personalized feedback</li>
+            <ul className="space-y-1 text-[var(--fg-muted)]">
+              <li>5 credits</li>
+              <li>~{estSeconds}s to generate</li>
+              <li>AI-graded</li>
+              <li>Detailed feedback</li>
             </ul>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Back Link */}
-      <div className="text-center">
-        <Link
-          href="/dashboard/mock-exam"
-          className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-        >
-          ← Back to Mock Exam Center
-        </Link>
+      {/* Error */}
+      {error && (
+        <p className="rounded-[var(--r-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-2.5 text-sm text-[var(--danger)]">
+          {error}
+        </p>
+      )}
+
+      {/* Progress */}
+      {progress && (
+        <div className="flex items-center gap-2 rounded-[var(--r-sm)] border border-[var(--info-border)] bg-[var(--info-bg)] px-4 py-2.5 text-sm text-[var(--info)]">
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--info)] border-t-transparent" />
+          {progress}
+        </div>
+      )}
+
+      <Button
+        variant="primary"
+        onPress={handleGenerate}
+        isDisabled={!canGenerate}
+        className="w-full"
+      >
+        {isPending ? "Generating…" : "Generate exam — 5 credits"}
+      </Button>
+
+      {/* How it works */}
+      <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-subtle)] p-5">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[var(--fg-subtle)]">How it works</p>
+        <div className="grid grid-cols-2 gap-4 text-sm text-[var(--fg-muted)]">
+          <ul className="space-y-1.5">
+            <li>Use academic PDFs, not scanned images</li>
+            <li>Pick documents on related topics</li>
+            <li>You need 5 credits in your account</li>
+          </ul>
+          <ul className="space-y-1.5">
+            <li>30 MCQs with explanations</li>
+            <li>2 essays with grading rubrics</li>
+            <li>AI-powered grading and feedback</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

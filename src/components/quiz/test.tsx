@@ -1,7 +1,7 @@
 "use client";
 
+import { Button } from "@heroui/react";
 import type { QuizQuestion } from "@/lib/gemini";
-import { ClayCard } from "@/components/ui/clay-card";
 
 type QuizTestProps = {
   questions: QuizQuestion[];
@@ -11,101 +11,97 @@ type QuizTestProps = {
   isSubmitting: boolean;
 };
 
-export function QuizTest({ 
-  questions, 
-  userAnswers, 
-  onAnswerChange, 
-  onSubmit, 
-  isSubmitting 
+export function QuizTest({
+  questions,
+  userAnswers,
+  onAnswerChange,
+  onSubmit,
+  isSubmitting,
 }: QuizTestProps) {
-  const allAnswered = questions.every((_, index) => userAnswers[index]);
+  const answeredCount = Object.keys(userAnswers).length;
+  const allAnswered = answeredCount === questions.length;
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl border-2 border-indigo-100 dark:border-indigo-800">
-        <h3 className="text-xl font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
-          📝 Quiz Test 
-          <span className="text-sm font-normal text-indigo-600 dark:text-indigo-300 bg-white dark:bg-indigo-900/50 px-2 py-1 rounded-lg border border-indigo-100 dark:border-indigo-800">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-subtle)] px-4 py-3">
+        <h3 className="font-display text-base font-semibold text-[var(--fg-strong)]">
+          Quiz
+          <span className="ml-2 font-mono text-sm font-normal text-[var(--fg-muted)]">
             {questions.length} questions
           </span>
         </h3>
-        <div className="text-sm font-bold text-slate-600 dark:text-slate-300">
-          Answered: {Object.keys(userAnswers).length}/{questions.length}
-        </div>
+        <span className="font-mono text-sm text-[var(--fg-muted)]">
+          {answeredCount}/{questions.length} answered
+        </span>
       </div>
 
-      <div className="space-y-6">
+      {/* Questions */}
+      <div className="space-y-4">
         {questions.map((question, index) => (
-          <ClayCard
+          <div
             key={index}
-            className="border-2 border-slate-100 dark:border-slate-700 !bg-white dark:!bg-slate-800"
+            className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-5"
           >
             <div className="flex items-start gap-4">
-              <span className="flex-shrink-0 w-10 h-10 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-xl flex items-center justify-center text-lg font-bold shadow-sm rotate-3">
-                {index + 1}
+              <span className="font-mono text-sm font-semibold text-[var(--fg-faint)] mt-0.5 shrink-0">
+                {String(index + 1).padStart(2, "0")}
               </span>
-              <div className="flex-1">
-                <p className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-6 leading-relaxed">
+              <div className="flex-1 space-y-4">
+                <p className="text-[17px] font-medium leading-snug text-[var(--fg-strong)]">
                   {question.question}
                 </p>
-                <div className="grid gap-3">
+                <div className="grid gap-2">
                   {question.options.map((option, optionIndex) => {
                     const isSelected = userAnswers[index] === option;
                     return (
                       <button
                         key={optionIndex}
+                        type="button"
                         onClick={() => onAnswerChange(index, option)}
-                        className={`
-                          group relative flex items-center p-4 rounded-xl text-left transition-all duration-200
-                          ${isSelected
-                            ? "clay-button !bg-indigo-600 !text-white transform scale-[1.02]"
-                            : "bg-slate-50 border-2 border-slate-200 hover:border-indigo-300 hover:bg-white text-slate-700 dark:bg-slate-900/50 dark:border-slate-700 dark:text-slate-300 dark:hover:border-indigo-500"
-                          }
-                        `}
+                        className={`flex items-center gap-3 rounded-[var(--r-sm)] border px-4 py-3 text-left text-sm transition-all ${
+                          isSelected
+                            ? "border-[var(--accent-border)] bg-[var(--accent-subtle)] text-[var(--accent)] font-medium"
+                            : "border-[var(--border)] bg-[var(--bg-subtle)] text-[var(--fg)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-muted)]"
+                        }`}
                       >
-                        <div className={`
-                          mr-4 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all
-                          ${isSelected
-                            ? "border-white bg-white/20"
-                            : "border-slate-300 group-hover:border-indigo-400 dark:border-slate-500"
-                          }
-                        `}>
-                          {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
-                        </div>
-                        <span className="font-semibold">{option}</span>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                            isSelected
+                              ? "border-[var(--accent)] bg-[var(--accent)]"
+                              : "border-[var(--border-stronger)]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <span className="h-2 w-2 rounded-full bg-white" />
+                          )}
+                        </span>
+                        {option}
                       </button>
                     );
                   })}
                 </div>
               </div>
             </div>
-          </ClayCard>
+          </div>
         ))}
       </div>
 
-      <div className="sticky bottom-6 flex justify-end">
-        <div className="p-2 backdrop-blur-md bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-white/50 shadow-lg">
-          <button
-            onClick={onSubmit}
-            disabled={!allAnswered || isSubmitting}
-            className={`
-              clay-button px-8 py-4 text-lg font-bold transition-all
-              ${allAnswered && !isSubmitting
-                ? "!bg-green-500 hover:!bg-green-400 !text-white transform hover:-translate-y-1"
-                : "!bg-slate-200 !text-slate-400 cursor-not-allowed shadow-none active:shadow-none translate-y-1"
-              }
-            `}
-          >
-            {isSubmitting ? "🚀 Submitting..." : "✨ Submit Quiz"}
-          </button>
-        </div>
+      {/* Submit */}
+      <div className="flex flex-col items-end gap-2">
+        {!allAnswered && (
+          <p className="text-sm text-[var(--fg-muted)]">
+            Answer all questions to submit.
+          </p>
+        )}
+        <Button
+          variant="primary"
+          onPress={onSubmit}
+          isDisabled={!allAnswered || isSubmitting}
+        >
+          {isSubmitting ? "Submitting…" : "Submit quiz"}
+        </Button>
       </div>
-
-      {!allAnswered && (
-        <p className="text-center font-bold text-amber-500 dark:text-amber-400 animate-pulse">
-          ⚡ Please answer all questions before submitting!
-        </p>
-      )}
     </div>
   );
 }
