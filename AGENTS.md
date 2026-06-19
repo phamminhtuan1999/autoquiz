@@ -1,45 +1,23 @@
-# AutoQuiz Agent Guidelines
+# Agent Instructions
 
-## Commands
-- **Build**: `npm run build`
-- **Dev**: `npm run dev`
-- **Lint**: `npm run lint`
-- **Start**: `npm run start`
-- **Test**: No test framework configured
+Add project-specific agent instructions here.
 
-## Code Style
+<!-- HARNESS:BEGIN -->
+## Harness
 
-### Imports & Formatting
-- Use absolute imports with `@/` prefix for internal modules
-- Group imports: external libraries first, then internal modules
-- Use `type` imports for types only: `import type { User } from "@supabase/supabase-js"`
+This repo uses Harness. Before work, read:
 
-### TypeScript
-- Strict mode enabled
-- Use explicit return types for functions
-- Define interfaces/types for all data structures
-- Use `Readonly<>` for immutable props
+- `README.md`
+- `docs/HARNESS.md`
+- `docs/FEATURE_INTAKE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/CONTEXT_RULES.md`
+- `docs/TOOL_REGISTRY.md`
+- `scripts/bin/harness-cli query matrix` on macOS/Linux, or `.\scripts\bin\harness-cli.exe query matrix` on Windows
 
-### React Components
-- Use `"use client"` directive for client components
-- Prefer function components with hooks
-- Use `useTransition` for async operations
-- Handle loading/error states explicitly
-
-### Naming Conventions
-- Components: PascalCase (e.g., `PdfUploader`)
-- Functions: camelCase (e.g., `generateQuiz`)
-- Variables: camelCase, descriptive names
-- Files: kebab-case for utilities, PascalCase for components
-
-### Error Handling
-- Throw descriptive Error objects
-- Use try/catch for async operations
-- Validate inputs early in functions
-- Handle user authentication checks
-
-### Database/API
-- Use Supabase server client for server actions
-- Implement proper RLS policies
-- Use RPC functions for atomic operations
-- Handle webhook signatures securely
+Use the Rust Harness CLI at `scripts/bin/harness-cli` on macOS/Linux or
+`scripts/bin/harness-cli.exe` on Windows as the main operational tool. Before a
+step that could use an external tool, run `scripts/bin/harness-cli query tools
+--capability <name> --status present` to see what is equipped; an absent
+capability is a clean skip.
+<!-- HARNESS:END -->
