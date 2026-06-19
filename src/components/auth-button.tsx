@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 
 export function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
@@ -17,65 +18,43 @@ export function AuthButton() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-
-    // Get initial session
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
       setLoading(false);
     });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const handleSignInWithGoogle = async () => {
     const supabase = createSupabaseBrowserClient();
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=/`,
-      },
+      options: { redirectTo: `${window.location.origin}/api/auth/callback?next=/` },
     });
-
-    if (error) {
-      console.error("Error signing in:", error);
-    }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-
     const supabase = createSupabaseBrowserClient();
-
     try {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/`,
-          },
+          options: { emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/` },
         });
         if (error) throw error;
-        setAuthError("Check your email to confirm your account!");
+        setAuthError("Check your email to confirm your account.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (error) {
@@ -89,140 +68,116 @@ export function AuthButton() {
     router.refresh();
   };
 
+  const closeModal = () => { setShowEmailForm(false); setAuthError(null); };
+
   if (loading) {
-    return (
-      <div className="rounded-full bg-slate-100 dark:bg-slate-800 px-6 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 animate-pulse">
-        Loading...
-      </div>
-    );
+    return <div className="h-8 w-24 animate-pulse rounded-[var(--r-sm)] bg-[var(--bg-muted)]" />;
   }
 
   if (user) {
     return (
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex flex-col items-end">
-          <span className="text-xs font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">Student</span>
-          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{user.email?.split('@')[0]}</span>
-        </div>
-        <button
-          onClick={handleSignOut}
-          className="clay-button !py-2 !px-4 !text-sm bg-slate-200 text-slate-700 hover:bg-slate-300"
-          style={{ background: 'none', backgroundColor: '#e2e8f0', color: '#334155' }}
-        >
-          Sign Out
-        </button>
-      </div>
+      <button
+        onClick={handleSignOut}
+        className="rounded-[var(--r-sm)] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--fg-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--fg)]"
+      >
+        Sign out
+      </button>
     );
   }
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex items-center gap-2">
         <button
           onClick={handleSignInWithGoogle}
-          className="clay-button flex items-center gap-2 !bg-white !text-slate-700 hover:!bg-slate-50"
-          style={{ background: 'white' }}
+          className="flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-sm text-[var(--fg)] transition-colors hover:bg-[var(--bg-subtle)]"
         >
-          <span className="text-lg">G</span> Google Login
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Google
         </button>
         <button
           onClick={() => setShowEmailForm(true)}
-          className="clay-button !bg-indigo-600 !text-white"
+          className="rounded-[var(--r-sm)] bg-[var(--accent)] px-3 py-1.5 text-sm font-semibold text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
         >
-          Email Login
+          Sign in
         </button>
       </div>
 
       {mounted && showEmailForm && createPortal(
-        <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-          onClick={() => {
-            setShowEmailForm(false);
-            setAuthError(null);
-          }}
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--fg)]/20 p-4"
+          onClick={closeModal}
         >
-          <div 
-            className="clay-card relative w-full max-w-sm p-8 animate-in zoom-in-95 duration-200" 
-            onClick={(e) => e.stopPropagation()}
+          <div
+            className="relative w-full max-w-sm rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-8 shadow-lg"
+            onClick={e => e.stopPropagation()}
           >
             <button
-              onClick={() => {
-                setShowEmailForm(false);
-                setAuthError(null);
-              }}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
-              type="button"
+              onClick={closeModal}
+              className="absolute right-4 top-4 rounded p-1 text-[var(--fg-faint)] transition-colors hover:text-[var(--fg-muted)]"
+              aria-label="Close"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <X className="h-4 w-4" />
             </button>
-            
-            <div className="mb-6 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-3xl dark:bg-indigo-900/50">
-                {isSignUp ? "✨" : "👋"}
-              </div>
-              <h3 className="text-2xl font-heading font-bold text-slate-800 dark:text-slate-100">
-                {isSignUp ? "Join the Fun!" : "Welcome Back"}
+
+            <div className="mb-6">
+              <h3 className="font-display text-xl font-bold text-[var(--fg-strong)]">
+                {isSignUp ? "Create an account" : "Welcome back"}
               </h3>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                {isSignUp ? "Create a student ID to start playing." : "Enter your credentials to continue."}
+              <p className="mt-1 text-sm text-[var(--fg-muted)]">
+                {isSignUp ? "Start generating source-grounded quizzes." : "Sign in to continue."}
               </p>
             </div>
 
-            <form onSubmit={handleEmailAuth} className="space-y-4">
-              <div className="space-y-4">
-                <input
-                  type="email"
-                  placeholder="Student Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full rounded-xl border-2 border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-all placeholder:font-normal dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full rounded-xl border-2 border-indigo-100 bg-indigo-50/50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-all placeholder:font-normal dark:bg-slate-800 dark:border-slate-700 dark:text-white"
-                />
-              </div>
-              
-              <button
-                type="submit"
-                className="clay-button w-full justify-center text-base"
-              >
-                {isSignUp ? "Create Account" : "Access Dashboard"}
-              </button>
-
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(!isSignUp);
-                    setAuthError(null);
-                  }}
-                  className="text-indigo-500 hover:text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  {isSignUp ? "Have an ID? Sign In" : "Need an ID? Create one"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEmailForm(false);
-                    setAuthError(null);
-                  }}
-                  className="hover:text-slate-700 dark:hover:text-slate-300"
-                >
-                  Cancel
-                </button>
-              </div>
+            <form onSubmit={handleEmailAuth} className="space-y-3">
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none transition-colors placeholder:text-[var(--fg-faint)] focus:border-[var(--accent-border)]"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                className="w-full rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none transition-colors placeholder:text-[var(--fg-faint)] focus:border-[var(--accent-border)]"
+              />
 
               {authError && (
-                <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600 font-bold text-center border-2 border-red-100 animate-in shake">
+                <p className={`rounded-[var(--r-sm)] border px-3 py-2 text-xs ${
+                  authError.startsWith("Check")
+                    ? "border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success)]"
+                    : "border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--danger)]"
+                }`}>
                   {authError}
-                </div>
+                </p>
               )}
+
+              <button
+                type="submit"
+                className="w-full rounded-[var(--r-sm)] bg-[var(--accent)] py-2 text-sm font-semibold text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
+              >
+                {isSignUp ? "Create account" : "Sign in"}
+              </button>
+
+              <div className="flex items-center justify-between pt-1 text-xs text-[var(--fg-faint)]">
+                <button
+                  type="button"
+                  onClick={() => { setIsSignUp(!isSignUp); setAuthError(null); }}
+                  className="transition-colors hover:text-[var(--accent)]"
+                >
+                  {isSignUp ? "Already have an account?" : "Need an account?"}
+                </button>
+              </div>
             </form>
           </div>
         </div>,
@@ -231,4 +186,3 @@ export function AuthButton() {
     </>
   );
 }
-

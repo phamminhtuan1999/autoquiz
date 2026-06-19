@@ -1,43 +1,20 @@
 import Link from "next/link";
 import { PdfUploader } from "@/components/pdf/uploader";
 import { Hero3DCanvas } from "@/components/landing/hero-3d-canvas";
-import { AuthButton } from "@/components/auth-button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden">
-      {/* Public header */}
-      <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]">
-        <nav className="mx-auto flex h-[46px] max-w-5xl items-center justify-between px-4 sm:px-8">
-          <Link
-            href="/"
-            className="font-display text-base font-bold text-[var(--fg-strong)] transition-colors hover:text-[var(--accent)]"
-          >
-            AutoQuiz
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="hidden text-sm text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)] sm:block"
-            >
-              Dashboard
-            </Link>
-            <AuthButton />
-            <ThemeToggle />
-          </div>
-        </nav>
-      </header>
-
       <main className="mx-auto max-w-5xl px-4 py-16 sm:px-8">
+
         {/* Hero */}
-        <section className="grid gap-12 lg:grid-cols-12 lg:items-center lg:py-8">
+        <header className="grid gap-12 lg:grid-cols-12 lg:items-center lg:py-8">
           <div className="lg:col-span-7 flex flex-col gap-6">
             <span className="inline-flex w-fit rounded-full border border-[var(--accent-border)] bg-[var(--accent-subtle)] px-3 py-1 font-mono text-xs text-[var(--accent)]">
               Source-grounded · Review-first
             </span>
 
-            <h1 className="font-display text-4xl font-bold leading-tight text-[var(--fg-strong)] sm:text-5xl lg:text-6xl" style={{ textWrap: "balance" }}>
+            <h1 className="font-display text-4xl font-bold leading-tight text-[var(--fg-strong)] sm:text-5xl lg:text-6xl">
               Upload a document.
               <br />
               AI drafts the quiz.
@@ -69,13 +46,15 @@ export default function Home() {
           <div className="lg:col-span-5 flex items-center justify-center">
             <Hero3DCanvas />
           </div>
-        </section>
+        </header>
 
         {/* Try it */}
         <section className="mt-20">
           <div className="rounded-[var(--r-xl)] border border-[var(--border)] bg-[var(--bg-subtle)] p-8">
             <div className="mb-6 space-y-1">
-              <h2 className="font-display text-lg font-semibold text-[var(--fg-strong)]">Try it now</h2>
+              <h2 className="font-display text-lg font-semibold text-[var(--fg-strong)]">
+                Try it now
+              </h2>
               <p className="text-sm text-[var(--fg-muted)]">
                 Drop a PDF. Questions drafted in under 30 seconds. Review before publishing.
               </p>
@@ -100,18 +79,26 @@ export default function Home() {
               body: "No confetti, no mascots. Real progress shown clearly — score trends, mastery over time.",
             },
           ].map((card) => (
-            <div key={card.heading} className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-6">
-              <h3 className="font-display text-sm font-semibold text-[var(--fg-strong)]">{card.heading}</h3>
+            <div
+              key={card.heading}
+              className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-6"
+            >
+              <h3 className="font-display text-sm font-semibold text-[var(--fg-strong)]">
+                {card.heading}
+              </h3>
               <p className="mt-2 text-sm leading-relaxed text-[var(--fg-muted)]">{card.body}</p>
             </div>
           ))}
         </section>
+
       </main>
 
       <footer className="mt-24 border-t border-[var(--border)] py-10">
         <div className="mx-auto max-w-5xl px-4 text-center">
           <p className="font-display text-sm font-semibold text-[var(--fg-faint)]">AutoQuiz</p>
-          <p className="mt-1 text-xs text-[var(--fg-faint)]">© {new Date().getFullYear()} AutoQuiz.</p>
+          <p className="mt-1 text-xs text-[var(--fg-faint)]">
+            © {new Date().getFullYear()} AutoQuiz.
+          </p>
         </div>
       </footer>
     </div>
