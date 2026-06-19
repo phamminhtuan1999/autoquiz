@@ -19,7 +19,7 @@ interface ReviewQuestion {
 }
 
 interface ReviewStudioProps {
-  questions: ReviewQuestion[];
+  questions?: ReviewQuestion[];
   sourcePdfUrl?: string;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -28,7 +28,7 @@ interface ReviewStudioProps {
 }
 
 export function ReviewStudio({
-  questions,
+  questions = [],
   onApprove,
   onReject,
   onEdit,

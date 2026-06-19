@@ -18,18 +18,11 @@ export default async function DashboardPage({
   searchParams: Promise<{ success?: string; session_id?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/");
 
-  if (!user) {
-    redirect("/");
-  }
-
-  // Await searchParams before accessing properties
   const params = await searchParams;
 
-  // Handle successful payment
   let paymentResult: {
     success?: boolean;
     error?: string;
@@ -40,7 +33,6 @@ export default async function DashboardPage({
     try {
       paymentResult = await handlePaymentSuccess(params.session_id);
     } catch (error) {
-      console.error("Error handling payment success:", error);
       paymentResult = { error: (error as Error).message };
     }
   }
@@ -54,95 +46,129 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false }),
   ]);
 
+  const credits = profile?.credits ?? 0;
+  const quizList = (quizzes ?? []) as QuizListItem[];
+
   return (
-    <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-8">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium text-slate-500">Credits</p>
-        <p className="text-4xl font-bold text-slate-900">
-          {profile?.credits ?? 0}
-        </p>
-        <p className="mt-2 text-sm text-slate-500">
-          Each quiz generation consumes one credit.
-        </p>
-        {paymentResult?.success && (
-          <div className="mt-4 rounded-md bg-green-50 p-3 text-sm text-green-800">
-            ✓ Successfully added {paymentResult.creditsAdded ?? 10} credits!
-          </div>
-        )}
-        {paymentResult?.alreadyProcessed && (
-          <div className="mt-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
-            ℹ Payment already processed. Credits were added previously.
-          </div>
-        )}
-        {paymentResult?.error && (
-          <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-            ✗ Error processing payment: {paymentResult.error}
-          </div>
-        )}
-        <div className="mt-4 flex gap-4 flex-wrap">
-          <BuyCreditsButton />
-          <Link
-            href="/dashboard/mock-exam"
-            className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            🎓 Mock Exams
-          </Link>
-          <Link
-            href="/dashboard/leaderboard"
-            className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            🏆 Leaderboards
-          </Link>
+    <div className="mx-auto max-w-5xl space-y-8 px-4 py-12 sm:px-8">
+
+      {/* Payment feedback */}
+      {paymentResult?.success && (
+        <div className="rounded-[var(--r-sm)] border border-[var(--success-border)] bg-[var(--success-bg)] px-4 py-3 text-sm text-[var(--success)]">
+          {paymentResult.creditsAdded ?? 10} credits added successfully.
         </div>
-      </section>
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Recent quizzes
-            </h2>
-            <p className="text-sm text-slate-500">
-              Full history stored safely in Supabase.
+      )}
+      {paymentResult?.alreadyProcessed && (
+        <div className="rounded-[var(--r-sm)] border border-[var(--info-border)] bg-[var(--info-bg)] px-4 py-3 text-sm text-[var(--info)]">
+          Payment already processed — credits were added previously.
+        </div>
+      )}
+      {paymentResult?.error && (
+        <div className="rounded-[var(--r-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]">
+          Error processing payment: {paymentResult.error}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-2xl font-bold text-[var(--fg-strong)]">Dashboard</h1>
+        <Link
+          href="/"
+          className="inline-flex items-center rounded-[var(--r-md)] bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
+        >
+          + Generate quiz
+        </Link>
+      </div>
+
+      {/* Credits + quick nav */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="col-span-2 sm:col-span-1 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg)] p-5">
+          <p className="text-xs uppercase tracking-wide text-[var(--fg-subtle)]">Credits</p>
+          <p className="mt-1 font-mono text-3xl font-semibold text-[var(--fg-strong)]">{credits}</p>
+          <p className="mt-1 text-xs text-[var(--fg-faint)]">1 credit per quiz</p>
+          <div className="mt-3">
+            <BuyCreditsButton />
+          </div>
+        </div>
+
+        {[
+          { label: "Quizzes", value: quizList.length, href: null },
+          { label: "Mock exams", value: null, href: "/dashboard/mock-exam" },
+          { label: "Leaderboard", value: null, href: "/dashboard/leaderboard" },
+        ].map((card) => (
+          <div key={card.label} className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg)] p-5">
+            <p className="text-xs uppercase tracking-wide text-[var(--fg-subtle)]">{card.label}</p>
+            {card.value != null && (
+              <p className="mt-1 font-mono text-3xl font-semibold text-[var(--fg-strong)]">{card.value}</p>
+            )}
+            {card.href && (
+              <Link href={card.href} className="mt-3 inline-block text-xs text-[var(--accent)] hover:underline">
+                Open
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Quick links to new screens */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {[
+          { label: "Review studio", description: "Approve, edit, or reject AI-generated questions.", href: "/dashboard/review" },
+          { label: "Analytics", description: "Mastery trends, score distribution, accuracy by question.", href: "/dashboard/analytics" },
+          { label: "Cram mode", description: "Key concepts and quick-recall flashcards.", href: "/dashboard/cram" },
+        ].map((link) => (
+          <Link
+            key={link.label}
+            href={link.href}
+            className="group rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)] p-5 transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--bg-subtle)]"
+          >
+            <p className="font-display text-sm font-semibold text-[var(--fg-strong)] transition-colors group-hover:text-[var(--accent)]">
+              {link.label}
             </p>
-          </div>
-          <Link
-            href="/"
-            className="text-sm font-medium text-indigo-600 hover:underline"
-          >
-            Generate new
+            <p className="mt-1 text-xs leading-relaxed text-[var(--fg-muted)]">{link.description}</p>
           </Link>
+        ))}
+      </div>
+
+      {/* Quiz list */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-base font-semibold text-[var(--fg-strong)]">Recent quizzes</h2>
         </div>
-        <ul className="mt-6 space-y-4">
-          {(quizzes as QuizListItem[] | null)?.length ? (
-            (quizzes as QuizListItem[]).map((quiz) => (
-              <li
-                key={quiz.id}
-                className="flex items-center justify-between rounded-lg border border-slate-100 p-4"
-              >
-                <div>
-                  <p className="font-medium text-slate-900">{quiz.title}</p>
-                  <p className="text-xs text-slate-500">
-                    {new Date(quiz.created_at).toLocaleString(undefined, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
-                  </p>
-                </div>
-                <Link
-                  href={`/dashboard/quizzes/${quiz.id}`}
-                  className="text-sm font-semibold text-indigo-600 hover:underline"
-                >
-                  View
-                </Link>
-              </li>
-            ))
+        <div className="overflow-hidden rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg)]">
+          {quizList.length === 0 ? (
+            <div className="px-6 py-10 text-center">
+              <p className="text-sm text-[var(--fg-muted)]">No quizzes yet.</p>
+              <Link href="/" className="mt-2 inline-block text-sm text-[var(--accent)] hover:underline">
+                Upload a PDF to get started
+              </Link>
+            </div>
           ) : (
-            <li className="rounded-lg border border-dashed border-slate-200 p-6 text-sm text-slate-500">
-              No quizzes yet. Upload a PDF to get started.
-            </li>
+            <ul className="divide-y divide-[var(--border)]">
+              {quizList.map((quiz) => (
+                <li key={quiz.id} className="flex items-center justify-between px-5 py-4 transition-colors hover:bg-[var(--bg-subtle)]">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--fg)]">{quiz.title}</p>
+                    <p className="font-mono text-xs text-[var(--fg-faint)]">
+                      {new Date(quiz.created_at).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/dashboard/quizzes/${quiz.id}`}
+                    className="text-xs text-[var(--accent)] hover:underline"
+                  >
+                    View
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
-        </ul>
-      </section>
+        </div>
+      </div>
+
     </div>
   );
 }
