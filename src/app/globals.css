@@ -1,87 +1,145 @@
-@import "tailwindcss";
+@import "@heroui/react/styles";
 @source "../**/*.{ts,tsx,js,jsx,mdx}";
 
-@theme inline {
-  --font-heading: var(--font-fredoka);
-  --font-body: var(--font-nunito);
-  --color-primary: #4F46E5;
-  --color-primary-light: #818CF8;
-  --color-accent: #F97316;
-  --color-success: #10B981;
-  --color-background: #EEF2FF;
-  --color-clay-shadow-out: inset 3px 3px 6px rgba(255, 255, 255, 0.7), inset -3px -3px 6px rgba(79, 70, 229, 0.1), 8px 8px 20px rgba(79, 70, 229, 0.1), -8px -8px 20px rgba(255, 255, 255, 1);
-  /* Refined Dark Mode Variables */
-  --color-background-dark: #0f172a;
-  --color-background-offset-dark: #1e1b4b;
-  --color-card-dark: #1e293b;
-  --color-clay-shadow-out-dark: inset 2px 2px 4px rgba(255, 255, 255, 0.05), inset -4px -4px 8px rgba(0, 0, 0, 0.4), 10px 10px 20px rgba(0, 0, 0, 0.4), -5px -5px 15px rgba(255, 255, 255, 0.02);
-  --color-clay-shadow-in-dark: inset 6px 6px 10px rgba(0, 0, 0, 0.4), inset -6px -6px 10px rgba(255, 255, 255, 0.03);
+/* US-001: Design tokens — role-named, dark mode is a value swap */
+/* US-005: HeroUI bridge — map HeroUI semantic names to DESIGN.md tokens */
+:root {
+  /* HeroUI variable bridges (our :root is unlayered → overrides HeroUI's @layer theme) */
+  --background:          var(--bg);       /* HeroUI page background */
+  --foreground:          var(--fg);       /* HeroUI text color */
+  --surface:             var(--bg);       /* HeroUI card / non-overlay surface */
+  --radius:              0.625rem;        /* 10px = --r-md; HeroUI base radius */
+  --accent-foreground:   var(--accent-fg); /* white text on accent buttons */
+  --muted:               var(--fg-muted); /* HeroUI muted/placeholder text */
+
+  /* Neutral ramp — warm paper */
+  --bg:              #ffffff;
+  --bg-subtle:       #faf9f7;
+  --bg-muted:        #f3f1ec;
+  --bg-inset:        #f7f5f1;
+  --border:          #ece9e3;
+  --border-strong:   #e1ddd4;
+  --border-stronger: #cfcabf;
+  --fg:              #1c1a17;
+  --fg-strong:       #2a2722;
+  --fg-muted:        #57534e;
+  --fg-subtle:       #79746c;
+  --fg-faint:        #a9a39a;
+
+  /* Accent — indigo */
+  --accent:          #4f46e5;
+  --accent-hover:    #4338ca;
+  --accent-subtle:   #eef0fe;
+  --accent-border:   #d7dafb;
+  --accent-fg:       #ffffff;
+
+  /* Spark — amber (motivation: streaks, XP, due soon) */
+  --amber-solid:     #f59e0b;
+  --amber:           #b45309;
+  --amber-bg:        #fdf4e3;
+  --amber-border:    #f4d99a;
+
+  /* Semantic — meaning, not decoration */
+  --success:         #15803d;
+  --success-bg:      #f0fdf4;
+  --success-border:  #bbf7d0;
+  --success-solid:   #16a34a;
+  --warning:         #b45309;
+  --warning-bg:      #fffbeb;
+  --warning-border:  #fde68a;
+  --danger:          #dc2626;
+  --danger-bg:       #fef2f2;
+  --danger-border:   #fecaca;
+  --info:            #2563eb;
+  --info-bg:         #eff6ff;
+  --info-border:     #bfdbfe;
+
+  /* Radius scale */
+  --r-sm:  8px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-xl:  20px;
 }
 
+/* Dark mode: value swap only — same variable names */
+.dark {
+  /* HeroUI dark bridges */
+  --background: var(--bg);
+  --surface:    var(--bg-subtle);
+
+  --bg:              #1c1a17;
+  --bg-subtle:       #232018;
+  --bg-muted:        #2a271f;
+  --bg-inset:        #252218;
+  --border:          #38352d;
+  --border-strong:   #48453b;
+  --border-stronger: #5a5648;
+  --fg:              #f5f3ef;
+  --fg-strong:       #ffffff;
+  --fg-muted:        #b8b3a9;
+  --fg-subtle:       #918b83;
+  --fg-faint:        #635e57;
+
+  --accent:          #6366f1;
+  --accent-hover:    #818cf8;
+  --accent-subtle:   #1e1b4b;
+  --accent-border:   #3730a3;
+
+  --amber:           #fbbf24;
+  --amber-bg:        #291d06;
+  --amber-border:    #78490e;
+
+  --success:         #4ade80;
+  --success-bg:      #052e16;
+  --success-border:  #14532d;
+  --danger:          #f87171;
+  --danger-bg:       #450a0a;
+  --danger-border:   #7f1d1d;
+  --info:            #60a5fa;
+  --info-bg:         #0c1a3b;
+  --info-border:     #1e3a5f;
+}
+
+/* US-002: Typography — Sora / Plus Jakarta Sans / Geist Mono */
+@theme inline {
+  --font-display: var(--font-sora);
+  --font-sans:    var(--font-plus-jakarta-sans);
+  --font-mono:    var(--font-geist-mono);
+}
+
+/* US-004: Retire clay/neumorphic — flat token-based replacements */
 @layer utilities {
+  /* Flat card — clay-card preserved as a stub so existing JSX doesn't break;
+     neumorphic shadows and gradient background are gone. Screens restyle in E02–E09. */
   .clay-card {
-    @apply bg-white dark:bg-slate-800/90 rounded-3xl border-2 border-white/40 dark:border-white/5 backdrop-blur-sm;
-    box-shadow: var(--color-clay-shadow-out);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    @apply bg-white dark:bg-[#232018] border border-[var(--border)] dark:border-[var(--border)];
+    border-radius: var(--r-lg);
+    transition: border-color 0.2s ease;
   }
 
-  :is(.dark .clay-card) {
-    box-shadow: var(--color-clay-shadow-out-dark);
-    background-color: #1e293b;
-  }
-  
   .clay-card:hover {
-    transform: translateY(-4px);
-    box-shadow: inset 3px 3px 6px rgba(255, 255, 255, 0.7), inset -3px -3px 6px rgba(79, 70, 229, 0.1), 12px 12px 24px rgba(79, 70, 229, 0.15), -8px -8px 20px rgba(255, 255, 255, 1);
+    border-color: var(--border-strong);
   }
 
-  :is(.dark .clay-card:hover) {
-    box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.05), inset -4px -4px 8px rgba(0, 0, 0, 0.5), 15px 15px 30px rgba(0, 0, 0, 0.5), -5px -5px 15px rgba(255, 255, 255, 0.03);
-  }
-
+  /* Flat primary button — replaces neumorphic clay-button */
   .clay-button {
-    @apply px-6 py-3 rounded-2xl font-heading font-bold text-white transition-all active:scale-95;
-    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
-    box-shadow: 6px 6px 12px rgba(79, 70, 229, 0.2), -6px -6px 12px rgba(255, 255, 255, 0.8);
-  }
-
-  :is(.dark .clay-button) {
-    box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.4), -4px -4px 10px rgba(255, 255, 255, 0.05);
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold text-[var(--accent-fg)] transition-all active:scale-95;
+    background-color: var(--accent);
+    border-radius: var(--r-md);
   }
 
   .clay-button:hover {
-    filter: brightness(1.1);
-  }
-
-  .clay-button:active {
-    box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.1), inset -4px -4px 8px rgba(255, 255, 255, 0.2);
-  }
-
-  :is(.dark .clay-button:active) {
-    box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.03);
+    background-color: var(--accent-hover);
   }
 }
 
 body {
-  background-color: var(--color-background);
-  font-family: var(--font-body), sans-serif;
-  color: #1E1B4B;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(129, 140, 248, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(79, 70, 229, 0.1) 0px, transparent 50%);
-  background-attachment: fixed;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-:is(.dark body) {
-  background-color: var(--color-background-dark);
-  color: #f8fafc;
-  background-image: 
-    radial-gradient(circle at top, #1e1b4b 0%, #0f172a 100%);
-}
-
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading), sans-serif;
+  font-family: var(--font-display), sans-serif;
 }

@@ -1,19 +1,25 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Fredoka, Nunito } from 'next/font/google';
+import { Sora, Plus_Jakarta_Sans, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import './globals.css';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { AuthButton } from '@/components/auth-button';
 
-const fredoka = Fredoka({
-  variable: '--font-fredoka',
+const sora = Sora({
+  variable: '--font-sora',
   subsets: ['latin'],
   display: 'swap',
 });
 
-const nunito = Nunito({
-  variable: '--font-nunito',
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: '--font-plus-jakarta-sans',
+  subsets: ['latin'],
+  display: 'swap',
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
   subsets: ['latin'],
   display: 'swap',
 });
@@ -30,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fredoka.variable} ${nunito.variable} min-h-screen bg-[#EEF2FF] dark:bg-[#0F172A] text-[#1E1B4B] dark:text-[#E2E8F0] antialiased`}>
+      <body className={`${sora.variable} ${plusJakartaSans.variable} ${geistMono.variable} min-h-screen antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="sticky top-0 z-50 border-b border-indigo-100 dark:border-indigo-900/50 bg-white/70 dark:bg-indigo-950/80 backdrop-blur-md transition-colors duration-300">
             <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-8">
