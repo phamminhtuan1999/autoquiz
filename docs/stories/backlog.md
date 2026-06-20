@@ -10,6 +10,7 @@ the work is selected or when a product decision needs a durable place to land.
 
 | Epic | Description | Status |
 | --- | --- | --- |
+| TBD | Add candidate epics after spec intake | unsliced |
 | E01 | AutoQuiz design-system redesign | sliced |
 | E02 | Lean RAG MVP: document indexing, citations, OpenAI/Gemini providers, regular quiz, cram, study review, mock exam | planned |
 
