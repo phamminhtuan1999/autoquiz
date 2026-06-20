@@ -69,41 +69,43 @@
   --background: var(--bg);
   --surface:    var(--bg-subtle);
 
-  /* Neutral ramp — cool charcoal, ~0.01 chroma toward indigo */
-  --bg:              #131318;
-  --bg-subtle:       #1a1a21;
-  --bg-muted:        #24242e;
-  --bg-inset:        #1d1d25;
-  --border:          #2c2c37;
-  --border-strong:   #3b3b48;
-  --border-stronger: #4e4e5d;
-  --fg:              #ececf2;
-  --fg-strong:       #ffffff;
-  --fg-muted:        #abacba;
-  --fg-subtle:       #83838f;
-  --fg-faint:        #5a5b66;
+  /* Neutral ramp — elevated charcoal. Depth comes from surface
+     lightness (lighter = higher), not shadow. ~0.012 chroma → indigo. */
+  --bg:              #1d1e24;
+  --bg-subtle:       #26272f;
+  --bg-muted:        #31323b;
+  --bg-inset:        #212229;
+  --border:          #3b3c47;
+  --border-strong:   #4e4f5a;
+  --border-stronger: #61626e;
+  --fg:              #f1f1f4;
+  --fg-strong:       #fdfdfd;
+  --fg-muted:        #afb0b9;
+  --fg-subtle:       #878892;
+  --fg-faint:        #676871;
 
-  /* Accent — indigo, brightened so it pops on charcoal */
-  --accent:          #7c82f5;
-  --accent-hover:    #9499f8;
-  --accent-subtle:   #1f2040;
-  --accent-border:   #383a66;
+  /* Accent — indigo. --accent fills buttons (white text passes 4.5:1);
+     --accent-hover is the brighter on-surface text/icon tone. */
+  --accent:          #5d6ce0;
+  --accent-hover:    #7487f6;
+  --accent-subtle:   #1f2341;
+  --accent-border:   #3c4275;
 
   /* Spark — amber */
-  --amber:           #fbbf24;
-  --amber-bg:        #2a2107;
-  --amber-border:    #574411;
+  --amber:           #f7b755;
+  --amber-bg:        #3c2a13;
+  --amber-border:    #654a29;
 
   /* Semantic */
-  --success:         #4ade80;
-  --success-bg:      #0f261a;
-  --success-border:  #1d4a31;
-  --danger:          #f87171;
-  --danger-bg:       #2b1416;
-  --danger-border:   #5a2024;
-  --info:            #60a5fa;
-  --info-bg:         #11213c;
-  --info-border:     #25426b;
+  --success:         #5bd47d;
+  --success-bg:      #1c3723;
+  --success-border:  #325b3b;
+  --danger:          #fb7475;
+  --danger-bg:       #4d2526;
+  --danger-border:   #803f40;
+  --info:            #63b9fe;
+  --info-bg:         #1c3249;
+  --info-border:     #2d557d;
 }
 
 /* US-002: Typography — Sora / Plus Jakarta Sans / Geist Mono */

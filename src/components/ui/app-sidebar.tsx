@@ -89,12 +89,12 @@ export function AppSidebar({ username }: AppSidebarProps) {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-2.5 rounded-[var(--r-sm)] px-3 py-2 text-sm transition-colors ${
                     active
-                      ? "bg-[var(--accent-subtle)] font-medium text-[var(--accent)]"
+                      ? "bg-[var(--accent-subtle)] font-medium text-[var(--accent-hover)]"
                       : "text-[var(--fg-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--fg)]"
                   }`}
                 >
                   <Icon
-                    className={`h-4 w-4 flex-shrink-0 ${active ? "text-[var(--accent)]" : "text-[var(--fg-subtle)]"}`}
+                    className={`h-4 w-4 flex-shrink-0 ${active ? "text-[var(--accent-hover)]" : "text-[var(--fg-subtle)]"}`}
                     strokeWidth={active ? 2 : 1.75}
                   />
                   {label}
