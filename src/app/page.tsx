@@ -16,13 +16,14 @@ export default function Home() {
           >
             AutoQuiz
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Link
               href="/dashboard"
               className="hidden text-sm text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)] sm:block"
             >
               Dashboard
             </Link>
+            <span className="hidden h-5 w-px bg-[var(--border)] sm:block" aria-hidden="true" />
             <AuthButton />
             <ThemeToggle />
           </div>
