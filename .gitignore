@@ -42,10 +42,16 @@ next-env.d.ts
 
 # agent/AI tool files
 .agent/
-.serena/
+.codex/
 .shared/
 implement/
 lint_output.txt
+.agents/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+.impeccable/
 
 # Portfolio generated assets (screenshots, AI-generated docs).
 portfolio/

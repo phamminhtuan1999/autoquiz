@@ -2,9 +2,10 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -12,29 +13,22 @@ export function ThemeToggle() {
     setMounted(true);
   }, []);
 
+  const isDark = resolvedTheme === "dark";
+
   if (!mounted) {
     return (
-      <div className="w-10 h-10 rounded-full border border-indigo-200 bg-white shadow-sm flex items-center justify-center opacity-50">
-        <span className="text-lg">☀️</span>
-      </div>
+      <div className="h-8 w-8 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)]" />
     );
   }
 
   return (
     <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className={`relative w-14 h-8 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-        theme === "dark" ? "bg-slate-700" : "bg-indigo-200"
-      }`}
-      aria-label="Toggle Night Mode"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="flex h-8 w-8 items-center justify-center rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg)] text-[var(--fg-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--fg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-border)]"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Light mode" : "Dark mode"}
     >
-      <span
-        className={`absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-          theme === "dark" ? "translate-x-6" : "translate-x-0"
-        }`}
-      >
-        {theme === "dark" ? "🌙" : "☀️"}
-      </span>
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
   );
 }
