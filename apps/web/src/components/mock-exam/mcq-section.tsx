@@ -119,7 +119,6 @@ export function MCQSection({
             const optionLabel = getOptionLabel(index);
             const isSelected = userAnswer === `${optionLabel}) ${option}`;
             const isCorrectOption = `${optionLabel}) ${option}` === currentQuestionData.correctAnswer;
-            const showCorrectness = showReview && userAnswer;
 
             return (
               <button

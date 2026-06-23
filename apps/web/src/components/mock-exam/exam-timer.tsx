@@ -24,13 +24,11 @@ export function ExamTimer({
 
   // Calculate warning levels
   const getWarningLevel = useCallback((remaining: number): TimerWarning => {
-    const percentage = (remaining / totalSeconds) * 100;
-
     if (remaining <= 0) return "expired";
     if (remaining <= 300) return "critical";  // 5 minutes
     if (remaining <= 600) return "warning";   // 10 minutes
     return "normal";
-  }, [totalSeconds]);
+  }, []);
 
   // Format time display
   const formatTime = useCallback((seconds: number): string => {
@@ -159,7 +157,7 @@ export function useExamTimer(totalMinutes: number) {
         const newElapsed = prev + 1;
         const remaining = Math.max(0, totalSeconds - newElapsed);
 
-        const level = updateWarningLevel(remaining);
+        updateWarningLevel(remaining);
 
         if (remaining === 0) {
           setIsExpired(true);

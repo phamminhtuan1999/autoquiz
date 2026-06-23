@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@heroui/react";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { DifficultyChip } from "@/components/quiz/difficulty-chip";
 import { ConfidenceMeter } from "@/components/quiz/confidence-meter";

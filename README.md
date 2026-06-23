@@ -134,7 +134,7 @@ The CLI will call `/api/webhooks/stripe`, which verifies the signature, checks t
 
 ### Running the Application
 
-1. Start the development server:
+1. Start the web development server:
 
 ```bash
 npm run dev
@@ -142,39 +142,46 @@ npm run dev
 
 2. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+### Running the AI Backend Scaffold
+
+The Lean RAG backend lives in `apps/ai`. The current scaffold exposes a health
+endpoint only; document processing and provider calls are planned in later RAG
+stories.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r apps/ai/requirements.txt
+npm run ai:dev
+```
+
+Open [http://localhost:8000/health](http://localhost:8000/health) to verify the
+service responds.
+
 ## Project Structure
 
 ```
-src/
-├── app/
-│   ├── api/
-│   │   ├── auth/
-│   │   │   └── callback/route.ts    # Supabase auth callback
-│   │   ├── checkout/route.ts         # Stripe checkout session
-│   │   └── webhooks/
-│   │       └── stripe/route.ts      # Stripe webhook handler
-│   ├── dashboard/
-│   │   ├── page.tsx                  # Dashboard with credits & quiz list
-│   │   └── quizzes/
-│   │       └── [quizId]/page.tsx     # Individual quiz view
-│   ├── layout.tsx                    # Root layout
-│   └── page.tsx                      # Home page with PDF uploader
-├── actions/
-│   └── generate-quiz.ts              # Server action for quiz generation
-├── components/
-│   ├── buy-credits-button.tsx        # Stripe checkout button
-│   └── pdf/
-│       └── uploader.tsx              # PDF upload & quiz generation UI
-├── lib/
-│   ├── gemini.ts                     # Google Gemini API client
-│   ├── stripe.ts                     # Stripe client
-│   └── supabase/
-│       ├── client.ts                 # Browser Supabase client
-│       ├── server.ts                 # Server Supabase client
-│       └── server-admin.ts           # Service role client (for webhooks)
-├── middleware.ts                     # Auth middleware
-└── utils/
-    └── pdf.ts                        # PDF text extraction utility
+apps/
+├── web/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── api/                 # API routes
+│   │   │   ├── dashboard/           # Authenticated app surfaces
+│   │   │   ├── layout.tsx           # Root layout
+│   │   │   └── page.tsx             # Home page
+│   │   ├── actions/                 # Server actions
+│   │   ├── components/              # React components
+│   │   ├── lib/                     # Provider and Supabase clients
+│   │   ├── proxy.ts                 # Auth proxy
+│   │   └── utils/                   # PDF extraction utility
+│   ├── public/
+│   ├── package.json
+│   └── next.config.ts
+└── ai/
+    ├── app/
+    │   ├── main.py                   # FastAPI app and /health endpoint
+    │   └── config.py                 # AI backend settings
+    └── requirements.txt
 ```
 
 ## Key Features Implementation
@@ -208,6 +215,9 @@ src/
 npm run build
 npm start
 ```
+
+For Vercel, configure the web project root as `apps/web`. For the future Python
+AI service, configure the service root as `apps/ai`.
 
 ## Environment Variables Reference
 

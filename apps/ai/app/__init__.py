@@ -1,0 +1,1 @@
+"""AutoQuiz AI backend package."""
