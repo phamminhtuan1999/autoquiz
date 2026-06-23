@@ -16,6 +16,8 @@
     "web:lint": "npm run lint --workspace @autoquiz/web",
     "ai:dev": "python3 -m uvicorn app.main:app --app-dir apps/ai --reload --port 8000",
     "ai:health": "PYTHONPATH=apps/ai python3 apps/ai/healthcheck.py",
+    "ai:run-once": "PYTHONPATH=apps/ai python3 apps/ai/run_once.py",
+    "ai:test": "PYTHONPATH=apps/ai python3 -m unittest discover apps/ai/tests",
     "stripe:listen": "npm run stripe:listen --workspace @autoquiz/web",
     "stripe:trigger": "npm run stripe:trigger --workspace @autoquiz/web"
   }

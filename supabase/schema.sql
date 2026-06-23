@@ -138,11 +138,43 @@ create table if not exists public.ai_jobs (
   output jsonb not null default '{}'::jsonb,
   error_message text,
   locked_at timestamptz,
+  locked_by text,
+  attempt_count integer not null default 0 check (attempt_count >= 0),
+  max_attempts integer not null default 3 check (max_attempts > 0),
   started_at timestamptz,
   finished_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.ai_jobs
+  add column if not exists locked_by text;
+alter table public.ai_jobs
+  add column if not exists attempt_count integer not null default 0;
+alter table public.ai_jobs
+  add column if not exists max_attempts integer not null default 3;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'ai_jobs_attempt_count_check'
+      and conrelid = 'public.ai_jobs'::regclass
+  ) then
+    alter table public.ai_jobs
+      add constraint ai_jobs_attempt_count_check check (attempt_count >= 0);
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'ai_jobs_max_attempts_check'
+      and conrelid = 'public.ai_jobs'::regclass
+  ) then
+    alter table public.ai_jobs
+      add constraint ai_jobs_max_attempts_check check (max_attempts > 0);
+  end if;
+end;
+$$;
 
 create table if not exists public.quiz_sets (
   id uuid primary key default gen_random_uuid(),
@@ -234,6 +266,9 @@ create index if not exists ai_jobs_status_created_idx
   on public.ai_jobs (status, created_at);
 create index if not exists ai_jobs_user_status_idx
   on public.ai_jobs (user_id, status, created_at desc);
+create index if not exists ai_jobs_claimable_idx
+  on public.ai_jobs (status, created_at, locked_at)
+  where status in ('queued', 'running');
 create index if not exists quiz_sets_user_mode_idx
   on public.quiz_sets (user_id, mode, created_at desc);
 create index if not exists questions_quiz_set_idx
@@ -336,6 +371,226 @@ as $$
     and dc.document_id = p_document_id
   order by ce.embedding <=> query_embedding
   limit least(greatest(match_count, 1), 50);
+$$;
+
+create or replace function public.assert_service_role()
+returns void
+language plpgsql
+stable
+set search_path = public
+as $$
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'service role required'
+      using errcode = '42501';
+  end if;
+end;
+$$;
+
+create or replace function public.claim_ai_job(
+  p_worker_id text,
+  p_job_types text[] default null,
+  p_lock_timeout interval default interval '15 minutes'
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  job_type text,
+  status text,
+  progress integer,
+  current_step text,
+  input jsonb,
+  output jsonb,
+  error_message text,
+  locked_at timestamptz,
+  locked_by text,
+  attempt_count integer,
+  max_attempts integer,
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform public.assert_service_role();
+
+  if nullif(trim(p_worker_id), '') is null then
+    raise exception 'worker id is required'
+      using errcode = '22023';
+  end if;
+
+  return query
+  with candidate as (
+    select j.id
+    from public.ai_jobs j
+    where (
+        j.status = 'queued'
+        or (
+          j.status = 'running'
+          and j.locked_at < now() - p_lock_timeout
+        )
+      )
+      and j.attempt_count < j.max_attempts
+      and (p_job_types is null or j.job_type = any(p_job_types))
+    order by j.created_at, j.id
+    for update skip locked
+    limit 1
+  )
+  update public.ai_jobs j
+  set status = 'running',
+      progress = case when j.status = 'queued' then 0 else j.progress end,
+      current_step = 'claimed',
+      locked_at = now(),
+      locked_by = p_worker_id,
+      attempt_count = j.attempt_count + 1,
+      started_at = coalesce(j.started_at, now()),
+      finished_at = null,
+      error_message = null
+  from candidate
+  where j.id = candidate.id
+  returning
+    j.id,
+    j.user_id,
+    j.job_type,
+    j.status,
+    j.progress,
+    j.current_step,
+    j.input,
+    j.output,
+    j.error_message,
+    j.locked_at,
+    j.locked_by,
+    j.attempt_count,
+    j.max_attempts,
+    j.started_at,
+    j.finished_at,
+    j.created_at,
+    j.updated_at;
+end;
+$$;
+
+create or replace function public.update_ai_job_progress(
+  p_job_id uuid,
+  p_worker_id text,
+  p_progress integer,
+  p_current_step text default null
+)
+returns public.ai_jobs
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_job public.ai_jobs;
+begin
+  perform public.assert_service_role();
+
+  update public.ai_jobs
+  set progress = least(greatest(p_progress, 0), 100),
+      current_step = coalesce(p_current_step, current_step),
+      locked_at = now()
+  where id = p_job_id
+    and status = 'running'
+    and locked_by = p_worker_id
+  returning * into updated_job;
+
+  if updated_job.id is null then
+    raise exception 'running job lock not found'
+      using errcode = 'P0002';
+  end if;
+
+  return updated_job;
+end;
+$$;
+
+create or replace function public.complete_ai_job(
+  p_job_id uuid,
+  p_worker_id text,
+  p_output jsonb default '{}'::jsonb
+)
+returns public.ai_jobs
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_job public.ai_jobs;
+begin
+  perform public.assert_service_role();
+
+  update public.ai_jobs
+  set status = 'succeeded',
+      progress = 100,
+      current_step = 'completed',
+      output = coalesce(p_output, '{}'::jsonb),
+      error_message = null,
+      locked_at = null,
+      locked_by = null,
+      finished_at = now()
+  where id = p_job_id
+    and status = 'running'
+    and locked_by = p_worker_id
+  returning * into updated_job;
+
+  if updated_job.id is null then
+    raise exception 'running job lock not found'
+      using errcode = 'P0002';
+  end if;
+
+  return updated_job;
+end;
+$$;
+
+create or replace function public.fail_ai_job(
+  p_job_id uuid,
+  p_worker_id text,
+  p_error_message text,
+  p_retryable boolean default true,
+  p_output jsonb default '{}'::jsonb
+)
+returns public.ai_jobs
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_job public.ai_jobs;
+begin
+  perform public.assert_service_role();
+
+  update public.ai_jobs
+  set status = case
+        when p_retryable and attempt_count < max_attempts then 'queued'
+        else 'failed'
+      end,
+      current_step = case
+        when p_retryable and attempt_count < max_attempts then 'queued_retry'
+        else 'failed'
+      end,
+      output = coalesce(p_output, output),
+      error_message = left(coalesce(p_error_message, 'job failed'), 2000),
+      locked_at = null,
+      locked_by = null,
+      finished_at = case
+        when p_retryable and attempt_count < max_attempts then null
+        else now()
+      end
+  where id = p_job_id
+    and status = 'running'
+    and locked_by = p_worker_id
+  returning * into updated_job;
+
+  if updated_job.id is null then
+    raise exception 'running job lock not found'
+      using errcode = 'P0002';
+  end if;
+
+  return updated_job;
+end;
 $$;
 
 alter table public.documents enable row level security;

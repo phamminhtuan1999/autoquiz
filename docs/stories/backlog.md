@@ -20,7 +20,7 @@ the work is selected or when a product decision needs a durable place to land.
 | --- | --- | --- | --- |
 | US-RAG-001 | Lean RAG product contract and architecture decision | high-risk | planned |
 | US-RAG-002 | Supabase document corpus, storage, pgvector, and RLS | high-risk | implemented |
-| US-RAG-003 | AI jobs table, claim protocol, and Python runner contract | high-risk | planned |
+| US-RAG-003 | AI jobs table, claim protocol, and Python runner contract | high-risk | implemented |
 | US-RAG-004 | PDF upload and document processing status UX | high-risk | planned |
 | US-RAG-005 | Docling extraction, page persistence, chunking, and validation | high-risk | planned |
 | US-RAG-006 | Embedding providers, OpenAI vector index, and retrieval RPC | high-risk | planned |
