@@ -1,3 +1,6 @@
 fastapi>=0.115,<1.0
 uvicorn[standard]>=0.30,<1.0
 pydantic-settings>=2.6,<3.0
+# US-RAG-005: PDF extraction + structure-aware chunking. Heavy (pulls torch +
+# models); imported lazily so unit tests run without it installed.
+docling>=2.0,<3.0
