@@ -1,8 +1,5 @@
 from app.jobs.models import AiJob, JobResult
-
-
-def process_document(job: AiJob) -> JobResult:
-    raise NotImplementedError("process_document handler is implemented in US-RAG-005")
+from app.jobs.process_document import process_document
 
 
 def generate_regular_quiz(job: AiJob) -> JobResult:
@@ -21,4 +18,6 @@ def generate_mock_exam(job: AiJob) -> JobResult:
     raise NotImplementedError("generate_mock_exam handler is implemented in US-RAG-012")
 
 
-DEFAULT_HANDLERS = {}
+DEFAULT_HANDLERS = {
+    "process_document": process_document,
+}
