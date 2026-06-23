@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  FileText,
   CheckSquare,
   BarChart2,
   ClipboardList,
@@ -21,6 +22,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Review queue", href: "/dashboard/review", icon: CheckSquare },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
   { label: "Mock exams", href: "/dashboard/mock-exam", icon: ClipboardList },
