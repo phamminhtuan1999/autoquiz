@@ -36,3 +36,34 @@ The score is capped at 100.
 
 Audit findings feed `scripts/bin/harness-cli propose`, which can turn repeated
 drift into proposed backlog items.
+
+## Current Snapshot
+
+Last checked: 2026-06-23.
+
+Command:
+
+```bash
+scripts/bin/harness-cli audit
+```
+
+Result:
+
+- Orphaned stories: 11.
+- Unverified stories: 0.
+- Unverified decisions: 0.
+- Open backlog without outcomes: 0.
+- Stale stories: 0.
+- Broken tools: 0.
+- Entropy score: 100/100.
+
+The 11 orphaned stories are planned Lean RAG stories that have not started yet:
+`US-RAG-001` and `US-RAG-004` through `US-RAG-013`. This is expected planning
+state rather than implemented-work drift.
+
+Trace note:
+
+- Trace `#6` is a duplicate standard trace for `US-RAG-003` created before the
+  high-risk trace had complete metadata.
+- Trace `#7` is the detailed trace linked to intake `#2` and meets the
+  high-risk trace requirement.

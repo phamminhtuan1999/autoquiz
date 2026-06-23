@@ -26,6 +26,34 @@ future user-provided spec.
 
 ## Current State
 
-Harness v0 exists before implementation. These docs define how the project will
-grow; they do not imply that app code, tests, CI, or deployment automation exist
-yet.
+As of 2026-06-23, the Harness is active and backed by the local SQLite durable
+layer queried through `scripts/bin/harness-cli`.
+
+Durable state snapshot:
+
+- Intakes: 2.
+- Stories: 15.
+- Decisions: 11.
+- Backlog items: 0.
+- Traces: 7.
+
+Lean RAG implementation status:
+
+- Implemented: `US-RAG-002`, `US-RAG-003`, `US-RAG-014`, `US-RAG-015`.
+- Planned: `US-RAG-001`, `US-RAG-004` through `US-RAG-013`.
+
+Current known proof gaps:
+
+- Live Supabase SQL/RLS/RPC proof is deferred until a real Supabase project and
+  service-role credentials are available.
+- Coverage and security-scan tools are not registered in the inbound tool
+  registry.
+
+Current operational commands:
+
+```bash
+scripts/bin/harness-cli query matrix
+scripts/bin/harness-cli query traces
+scripts/bin/harness-cli query backlog --open
+scripts/bin/harness-cli audit
+```

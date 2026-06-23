@@ -38,3 +38,17 @@ proposed | accepted | implemented | rejected
 ## Items
 
 No backlog items yet.
+
+Last checked: 2026-06-23 with:
+
+```bash
+scripts/bin/harness-cli query backlog --open
+```
+
+The durable backlog table is empty. Current trace friction is tracked in traces
+instead:
+
+- Live Supabase integration proof is blocked until service-role credentials are
+  available.
+- Network-restricted validation requires escalation for npm registry, Vercel,
+  GitHub, and Google Fonts.
