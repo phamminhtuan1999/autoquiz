@@ -45,6 +45,8 @@ Risk flags:
 
 - `docs/product/lean-rag-mvp.md`
 - `docs/product/ai-provider-strategy.md`
+- `docs/product/rag-clean-cutover.md`
+- `docs/product/rag-data-model.md`
 
 ## Candidate Epics
 

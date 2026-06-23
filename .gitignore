@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,7 +16,9 @@
 
 # next.js
 /.next/
+**/.next/
 /out/
+**/out/
 
 # production
 /build
@@ -32,6 +35,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.venv/
+**/.venv/
+
+# python
+__pycache__/
+**/__pycache__/
+*.py[cod]
 
 # vercel
 .vercel

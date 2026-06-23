@@ -45,6 +45,10 @@ content, study reviews, and mock exams.
 - `failed`
 - `unsupported`
 
+## Data Model
+
+The RAG schema contract lives in `docs/product/rag-data-model.md`.
+
 ## Generation Modes
 
 | Mode | Contract |
@@ -66,6 +70,8 @@ content, study reviews, and mock exams.
 - Advanced admin dashboard.
 
 ## Clean Cutover Notes
+
+Detailed cutover rules live in `docs/product/rag-clean-cutover.md`.
 
 The current app already has `quizzes`, `question_attempts`, and `mock_exams`
 tables plus direct Gemini generation actions. Old generated quiz/mock-exam data

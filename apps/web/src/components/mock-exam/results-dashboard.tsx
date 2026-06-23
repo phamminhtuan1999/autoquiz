@@ -1,6 +1,6 @@
 "use client";
 
-import type { MockExamResult, EssayScore } from "@/types/mock-exam";
+import type { MockExamResult } from "@/types/mock-exam";
 
 interface ResultsDashboardProps {
   results: MockExamResult;

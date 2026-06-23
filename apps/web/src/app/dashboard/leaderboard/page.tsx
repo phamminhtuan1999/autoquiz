@@ -37,7 +37,9 @@ export default function LeaderboardPage() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    void Promise.resolve().then(fetchData);
+  }, []);
 
   const handleUpdateUniversity = async (e: React.FormEvent) => {
     e.preventDefault();
