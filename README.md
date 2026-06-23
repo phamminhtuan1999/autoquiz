@@ -67,6 +67,11 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-1.5-pro
 
+# AI backend
+AUTOQUIZ_AI_SUPABASE_URL=your_supabase_project_url
+AUTOQUIZ_AI_SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+AUTOQUIZ_AI_WORKER_ID=autoquiz-ai-local
+
 # App URL (optional)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
@@ -158,6 +163,12 @@ npm run ai:dev
 Open [http://localhost:8000/health](http://localhost:8000/health) to verify the
 service responds.
 
+Run one queued AI job after a later story wires at least one concrete handler:
+
+```bash
+PYTHONPATH=apps/ai python3 apps/ai/run_once.py
+```
+
 ## Project Structure
 
 ```
@@ -177,10 +188,12 @@ apps/
 │   ├── public/
 │   ├── package.json
 │   └── next.config.ts
-└── ai/
+    └── ai/
     ├── app/
+    │   ├── jobs/                     # AI job claim and runner contract
     │   ├── main.py                   # FastAPI app and /health endpoint
     │   └── config.py                 # AI backend settings
+    ├── run_once.py                   # Claim and execute one queued job
     └── requirements.txt
 ```
 
@@ -216,8 +229,9 @@ npm run build
 npm start
 ```
 
-For Vercel, configure the web project root as `apps/web`. For the future Python
-AI service, configure the service root as `apps/ai`.
+The included `vercel.json` builds the web app from the repository root and
+publishes `apps/web/.next`. For the future Python AI service, configure a
+separate service root as `apps/ai`.
 
 ## Environment Variables Reference
 

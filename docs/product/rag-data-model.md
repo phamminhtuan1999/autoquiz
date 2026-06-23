@@ -55,6 +55,16 @@ Job statuses:
 - `failed`
 - `cancelled`
 
+Worker contract:
+
+- Jobs are claimed through service-role-only RPCs.
+- `claim_ai_job` atomically claims one queued or stale running job and records
+  `locked_by`, `locked_at`, and `attempt_count`.
+- `complete_ai_job` and `fail_ai_job` only update jobs currently locked by the
+  calling worker id.
+- Retryable failures return to `queued` while `attempt_count < max_attempts`;
+  non-retryable or exhausted jobs become `failed`.
+
 ## Generated Content
 
 | Table | Purpose |
