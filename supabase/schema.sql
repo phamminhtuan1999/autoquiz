@@ -285,10 +285,11 @@ create index if not exists chunk_embeddings_openai_embedding_idx
   using ivfflat (embedding vector_cosine_ops)
   with (lists = 100);
 
-create index if not exists chunk_embeddings_gemini_embedding_idx
-  on public.chunk_embeddings_gemini
-  using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
+-- No ANN index on chunk_embeddings_gemini: its embedding is vector(3072), and
+-- pgvector's ivfflat/hnsw indexes cap at 2000 dimensions. The Gemini table is a
+-- development / full-document fallback, so exact (sequential) cosine search is
+-- acceptable here. When the Gemini retrieval path is built (US-RAG-006), switch
+-- this column to halfvec(3072) (hnsw supports up to 4000 dims) and index it then.
 
 create or replace function public.touch_updated_at()
 returns trigger
@@ -326,7 +327,8 @@ returns table (
 )
 language sql
 stable
-set search_path = public
+-- extensions: the pgvector type/operators (<=>) live in the extensions schema
+set search_path = public, extensions
 as $$
   select
     dc.id as chunk_id,
@@ -357,7 +359,8 @@ returns table (
 )
 language sql
 stable
-set search_path = public
+-- extensions: the pgvector type/operators (<=>) live in the extensions schema
+set search_path = public, extensions
 as $$
   select
     dc.id as chunk_id,
