@@ -51,6 +51,12 @@ npm install
 cp .env.example .env
 ```
 
+> **Monorepo note:** keep this single `.env` at the repo root. After the
+> `apps/web` / `apps/ai` split, the web app loads the root `.env` automatically
+> (via `apps/web/next.config.ts`), so `npm run dev` and `npm run build` find
+> `NEXT_PUBLIC_SUPABASE_*` without a per-app copy or symlink. On Vercel/CI the
+> real environment is already set and takes precedence.
+
 Edit `.env` and add your credentials:
 
 ```env
