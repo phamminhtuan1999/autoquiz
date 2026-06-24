@@ -38,6 +38,27 @@ class FakeExtractor:
         return self._document
 
 
+class FakeEmbeddingProvider:
+    name = "fake"
+    model = "fake-embed-1"
+    dimension = 3
+    target_table = "chunk_embeddings_openai"
+
+    def __init__(self, *, error: Exception | None = None, vectors=None) -> None:
+        self._error = error
+        self._vectors = vectors
+
+    def embed(self, texts):
+        if self._error is not None:
+            raise self._error
+        if self._vectors is not None:
+            return self._vectors
+        return [[float(i), 0.0, 0.0] for i, _ in enumerate(texts)]
+
+    def embed_query(self, text):
+        return self.embed([text])[0]
+
+
 class RecordingStore:
     def __init__(self) -> None:
         self.calls: list[tuple] = []
@@ -51,8 +72,19 @@ class RecordingStore:
     def save_chunks(self, document_id: str, user_id: str, chunks) -> None:
         self.calls.append(("chunks", len(chunks)))
 
-    def mark_ready(self, document_id: str, user_id: str, *, page_count: int) -> None:
-        self.calls.append(("ready", page_count))
+    def save_embeddings(self, document_id, user_id, *, provider, model, target_table, embeddings_by_index) -> None:
+        self.calls.append(("embeddings", len(embeddings_by_index), provider, target_table))
+
+    def mark_ready(
+        self,
+        document_id: str,
+        user_id: str,
+        *,
+        page_count: int,
+        embedding_provider: str | None = None,
+        embedding_model: str | None = None,
+    ) -> None:
+        self.calls.append(("ready", page_count, embedding_provider, embedding_model))
 
     def mark_unsupported(self, document_id: str, user_id: str, *, reason: str) -> None:
         self.calls.append(("unsupported", reason))
@@ -90,12 +122,13 @@ def doc(pages, chunks=None) -> ExtractedDocument:
 
 
 class ProcessDocumentHandlerTest(unittest.TestCase):
-    def _handler(self, *, storage, store, extractor, progress=None, **kwargs):
+    def _handler(self, *, storage, store, extractor, progress=None, embedder=None, **kwargs):
         return ProcessDocumentHandler(
             storage=storage,
             store=store,
             extractor=extractor,
             progress=progress or RecordingProgress(),
+            embedder=embedder or FakeEmbeddingProvider(),
             **kwargs,
         )
 
@@ -118,15 +151,37 @@ class ProcessDocumentHandlerTest(unittest.TestCase):
 
         result = handler(make_job())
 
-        self.assertEqual(result.output, {"result": "ready", "pages": 2, "chunks": 1})
         self.assertEqual(
-            store.steps(), ["processing", "pages", "chunks", "ready"]
+            result.output, {"result": "ready", "pages": 2, "chunks": 1, "embeddings": 1}
+        )
+        self.assertEqual(
+            store.steps(), ["processing", "pages", "chunks", "embeddings", "ready"]
         )
         self.assertIn(("pages", 2), store.calls)
-        self.assertIn(("ready", 2), store.calls)
+        self.assertIn(("embeddings", 1, "fake", "chunk_embeddings_openai"), store.calls)
+        self.assertIn(("ready", 2, "fake", "fake-embed-1"), store.calls)
         # progress is reported across stages and ends before completion
         self.assertTrue(progress.events)
         self.assertLessEqual(progress.events[0][0], progress.events[-1][0])
+
+    def test_embedding_provider_failure_is_transient(self) -> None:
+        store = RecordingStore()
+        document = doc(
+            pages=[ExtractedPage(page_number=1, raw_text="hello")],
+            chunks=[ExtractedChunk(chunk_index=0, content="hello")],
+        )
+        handler = self._handler(
+            storage=FakeStorage(),
+            store=store,
+            extractor=FakeExtractor(document=document),
+            embedder=FakeEmbeddingProvider(error=RuntimeError("rate limited")),
+        )
+
+        with self.assertRaises(RuntimeError):
+            handler(make_job(attempt_count=3, max_attempts=3))
+
+        self.assertNotIn("ready", store.steps())  # never marked ready
+        self.assertIn("failed", store.steps())  # final attempt marks failed
 
     def test_no_extractable_text_is_unsupported_not_an_error(self) -> None:
         store = RecordingStore()

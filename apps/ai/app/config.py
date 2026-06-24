@@ -11,6 +11,14 @@ class Settings(BaseSettings):
     worker_id: str = "autoquiz-ai-local"
     job_types_csv: str = ""
 
+    # US-RAG-006: embedding providers. Active provider defaults to the product
+    # primary (OpenAI); Gemini is the dev/fallback provider.
+    embedding_provider: str = "openai"
+    openai_api_key: str = ""
+    openai_embedding_model: str = "text-embedding-3-small"
+    gemini_api_key: str = ""
+    gemini_embedding_model: str = "gemini-embedding-001"
+
     @property
     def job_types(self) -> list[str] | None:
         values = [
