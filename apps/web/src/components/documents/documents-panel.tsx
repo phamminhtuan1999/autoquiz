@@ -11,6 +11,7 @@ import {
   Clock,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { GenerateQuizControl } from "@/components/documents/generate-quiz-control";
 
 const MAX_BYTES = 30 * 1024 * 1024; // 30 MB — matches the documents bucket limit
 const POLL_MS = 4000;
@@ -385,6 +386,12 @@ export function DocumentsPanel({ userId, initialDocuments }: DocumentsPanelProps
                           {detail}
                         </p>
                       )}
+
+                    {doc.status === "ready" && (
+                      <div className="mt-2">
+                        <GenerateQuizControl documentId={doc.id} />
+                      </div>
+                    )}
                   </div>
 
                   <button
