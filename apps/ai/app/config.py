@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_embedding_model: str = "gemini-embedding-001"
 
+    # US-RAG-007: generation providers. Primary defaults to the product primary
+    # (OpenAI); Gemini is the fallback. Keys reuse the embedding key fields.
+    generation_provider: str = "openai"
+    generation_fallback_provider: str = "gemini"
+    openai_chat_model: str = "gpt-4o-mini"
+    # gemini-2.5-flash: verified to have free-tier generateContent quota for the
+    # dev/fallback path (gemini-2.0-flash returns limit:0 on the free tier).
+    gemini_chat_model: str = "gemini-2.5-flash"
+
     @property
     def job_types(self) -> list[str] | None:
         values = [
