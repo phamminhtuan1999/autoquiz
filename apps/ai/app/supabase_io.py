@@ -351,3 +351,33 @@ class SupabaseQuizStore:
             _post_returning(
                 self.base, self.service_role_key, "answer_options", option_rows, self.timeout_seconds
             )
+
+    def save_cards(self, *, quiz_set_id: str, user_id: str, document_id: str, cards) -> None:
+        """US-RAG-009: persist cram flashcards as ``questions`` (``type='flashcard'``).
+
+        A flashcard is front (``prompt``) + back (``correct_answer``); there are
+        no ``answer_options``."""
+        if not cards:
+            return
+        card_rows = [
+            {
+                "user_id": user_id,
+                "quiz_set_id": quiz_set_id,
+                "document_id": document_id,
+                "source_chunk_id": c.source_chunk_id,
+                "type": "flashcard",
+                "difficulty": c.difficulty,
+                "topic": c.topic,
+                "prompt": c.prompt,
+                "correct_answer": c.answer,
+                "explanation": c.explanation,
+                "source_page_start": c.source_page_start,
+                "source_page_end": c.source_page_end,
+                "source_excerpt": c.source_excerpt,
+                "metadata": c.metadata or {},
+            }
+            for c in cards
+        ]
+        _post_returning(
+            self.base, self.service_role_key, "questions", card_rows, self.timeout_seconds
+        )
