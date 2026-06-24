@@ -198,3 +198,156 @@ class SupabaseDocumentStore:
             raise SupabaseHttpError(f"{method} {url} failed ({exc.code}): {detail}") from exc
         except error.URLError as exc:
             raise SupabaseHttpError(str(exc.reason)) from exc
+
+
+def _get_json(base_url: str, service_role_key: str, path_and_query: str, timeout: int) -> list[dict]:
+    url = f"{base_url.rstrip('/')}/rest/v1/{path_and_query}"
+    req = request.Request(url, method="GET", headers=_auth_headers(service_role_key))
+    try:
+        with request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8") or "[]")
+    except error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise SupabaseHttpError(f"GET {url} failed ({exc.code}): {detail}") from exc
+    except error.URLError as exc:
+        raise SupabaseHttpError(str(exc.reason)) from exc
+
+
+def _post_returning(
+    base_url: str, service_role_key: str, table: str, rows: list[dict], timeout: int
+) -> list[dict]:
+    """Insert rows and return the created representations (in insert order)."""
+    url = f"{base_url.rstrip('/')}/rest/v1/{table}"
+    body = json.dumps(rows).encode("utf-8")
+    headers = {
+        **_auth_headers(service_role_key),
+        "content-type": "application/json",
+        "prefer": "return=representation",
+    }
+    req = request.Request(url, data=body, method="POST", headers=headers)
+    try:
+        with request.urlopen(req, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8") or "[]")
+    except error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise SupabaseHttpError(f"POST {url} failed ({exc.code}): {detail}") from exc
+    except error.URLError as exc:
+        raise SupabaseHttpError(str(exc.reason)) from exc
+
+
+class SupabaseChunkSource:
+    """US-RAG-008: fetch a document's retrieval chunks to ground generation.
+
+    Returns chunks ordered by ``chunk_index`` so the model's 1-based citation
+    index is stable across the prompt and the persisted question.
+    """
+
+    def __init__(self, *, supabase_url: str, service_role_key: str, timeout_seconds: int = 30) -> None:
+        self.base = supabase_url.rstrip("/")
+        self.service_role_key = service_role_key
+        self.timeout_seconds = timeout_seconds
+
+    def fetch_chunks(self, document_id: str, user_id: str, *, limit: int):
+        from app.jobs.generate_quiz import SourceChunk
+
+        rows = _get_json(
+            self.base,
+            self.service_role_key,
+            f"document_chunks?document_id=eq.{document_id}&user_id=eq.{user_id}"
+            f"&select=id,chunk_index,content,page_start,page_end"
+            f"&order=chunk_index.asc&limit={int(limit)}",
+            self.timeout_seconds,
+        )
+        return [
+            SourceChunk(
+                chunk_id=row["id"],
+                chunk_index=int(row["chunk_index"]),
+                content=row.get("content") or "",
+                page_start=row.get("page_start"),
+                page_end=row.get("page_end"),
+            )
+            for row in rows
+        ]
+
+
+class SupabaseQuizStore:
+    """US-RAG-008: persist a generated quiz_set + questions + answer_options."""
+
+    def __init__(self, *, supabase_url: str, service_role_key: str, timeout_seconds: int = 30) -> None:
+        self.base = supabase_url.rstrip("/")
+        self.service_role_key = service_role_key
+        self.timeout_seconds = timeout_seconds
+
+    def create_quiz_set(
+        self,
+        *,
+        user_id: str,
+        document_id: str,
+        job_id: str,
+        mode: str,
+        title: str,
+        difficulty: str | None,
+        credit_cost: int,
+    ) -> str:
+        created = _post_returning(
+            self.base,
+            self.service_role_key,
+            "quiz_sets",
+            [
+                {
+                    "user_id": user_id,
+                    "document_id": document_id,
+                    "job_id": job_id,
+                    "mode": mode,
+                    "title": title,
+                    "difficulty": difficulty,
+                    "status": "ready",
+                    "credit_cost": credit_cost,
+                }
+            ],
+            self.timeout_seconds,
+        )
+        return created[0]["id"]
+
+    def save_questions(self, *, quiz_set_id: str, user_id: str, document_id: str, questions) -> None:
+        if not questions:
+            return
+        question_rows = [
+            {
+                "user_id": user_id,
+                "quiz_set_id": quiz_set_id,
+                "document_id": document_id,
+                "source_chunk_id": q.source_chunk_id,
+                "type": "mcq",
+                "difficulty": q.difficulty,
+                "topic": q.topic,
+                "prompt": q.prompt,
+                "correct_answer": q.correct_answer,
+                "explanation": q.explanation,
+                "source_page_start": q.source_page_start,
+                "source_page_end": q.source_page_end,
+                "source_excerpt": q.source_excerpt,
+                "metadata": q.metadata or {},
+            }
+            for q in questions
+        ]
+        created = _post_returning(
+            self.base, self.service_role_key, "questions", question_rows, self.timeout_seconds
+        )
+        # PostgREST returns inserted rows in request order — zip back to options.
+        option_rows: list[dict] = []
+        for question, row in zip(questions, created):
+            for index, content in enumerate(question.options):
+                option_rows.append(
+                    {
+                        "user_id": user_id,
+                        "question_id": row["id"],
+                        "label": chr(ord("A") + index),
+                        "content": content,
+                        "is_correct": index == question.answer_index,
+                    }
+                )
+        if option_rows:
+            _post_returning(
+                self.base, self.service_role_key, "answer_options", option_rows, self.timeout_seconds
+            )
