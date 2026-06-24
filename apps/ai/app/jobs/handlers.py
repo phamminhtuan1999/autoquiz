@@ -1,10 +1,7 @@
+from app.jobs.generate_cram import generate_cram
 from app.jobs.generate_quiz import generate_regular_quiz
 from app.jobs.models import AiJob, JobResult
 from app.jobs.process_document import process_document
-
-
-def generate_cram(job: AiJob) -> JobResult:
-    raise NotImplementedError("generate_cram handler is implemented in US-RAG-009")
 
 
 def generate_study_review(job: AiJob) -> JobResult:
@@ -18,4 +15,5 @@ def generate_mock_exam(job: AiJob) -> JobResult:
 DEFAULT_HANDLERS = {
     "process_document": process_document,
     "generate_regular_quiz": generate_regular_quiz,
+    "generate_cram": generate_cram,
 }
