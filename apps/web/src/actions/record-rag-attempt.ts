@@ -33,8 +33,15 @@ export async function recordRagAttempt(input: RecordRagAttemptInput) {
   });
 
   if (error) {
-    console.error("Error recording RAG attempt:", error);
-    return { error: error.message };
+    // Best-effort write: a failed attempt-record must never interrupt
+    // quiz-taking (e.g. a stale tab pointing at a since-deleted quiz_set fails
+    // the foreign-key check). Log a readable warning — not a raw object, which
+    // serializes to "{}" and trips the Next.js error overlay.
+    const detail = [error.message, error.code, error.details, error.hint]
+      .filter(Boolean)
+      .join(" · ");
+    console.warn(`Could not record RAG attempt: ${detail || "unknown error"}`);
+    return { error: error.message ?? "Could not record attempt" };
   }
   return { success: true };
 }
