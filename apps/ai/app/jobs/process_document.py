@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from app.embeddings import EmbeddingProvider
 from app.jobs.models import AiJob, JobResult
 
 
@@ -60,7 +61,25 @@ class DocumentStore(Protocol):
     def mark_processing(self, document_id: str, user_id: str) -> None: ...
     def save_pages(self, document_id: str, user_id: str, pages: list[ExtractedPage]) -> None: ...
     def save_chunks(self, document_id: str, user_id: str, chunks: list[ExtractedChunk]) -> None: ...
-    def mark_ready(self, document_id: str, user_id: str, *, page_count: int) -> None: ...
+    def save_embeddings(
+        self,
+        document_id: str,
+        user_id: str,
+        *,
+        provider: str,
+        model: str,
+        target_table: str,
+        embeddings_by_index: dict[int, list[float]],
+    ) -> None: ...
+    def mark_ready(
+        self,
+        document_id: str,
+        user_id: str,
+        *,
+        page_count: int,
+        embedding_provider: str | None = None,
+        embedding_model: str | None = None,
+    ) -> None: ...
     def mark_unsupported(self, document_id: str, user_id: str, *, reason: str) -> None: ...
     def mark_failed(self, document_id: str, user_id: str, *, error: str) -> None: ...
 
@@ -84,6 +103,7 @@ class ProcessDocumentHandler:
     store: DocumentStore
     extractor: PdfExtractor
     progress: ProgressReporter
+    embedder: EmbeddingProvider
     max_pdf_bytes: int = MAX_PDF_BYTES
     max_pages: int = MAX_PAGES
 
@@ -120,18 +140,38 @@ class ProcessDocumentHandler:
                     reason="no extractable text (scanned PDF without OCR is unsupported)",
                 )
 
-            self._report(job, 60, "saving pages")
+            self._report(job, 55, "saving pages")
             self.store.save_pages(document_id, user_id, document.pages)
-            self._report(job, 75, "saving chunks")
+            self._report(job, 65, "saving chunks")
             self.store.save_chunks(document_id, user_id, document.chunks)
+
+            self._report(job, 80, "embedding")
+            embeddings_by_index = self._embed(document.chunks)
+            if embeddings_by_index:
+                self.store.save_embeddings(
+                    document_id,
+                    user_id,
+                    provider=self.embedder.name,
+                    model=self.embedder.model,
+                    target_table=self.embedder.target_table,
+                    embeddings_by_index=embeddings_by_index,
+                )
+
             self._report(job, 95, "finalizing")
-            self.store.mark_ready(document_id, user_id, page_count=len(document.pages))
+            self.store.mark_ready(
+                document_id,
+                user_id,
+                page_count=len(document.pages),
+                embedding_provider=self.embedder.name,
+                embedding_model=self.embedder.model,
+            )
 
             return JobResult(
                 {
                     "result": "ready",
                     "pages": len(document.pages),
                     "chunks": len(document.chunks),
+                    "embeddings": len(embeddings_by_index),
                 }
             )
         except UnsupportedDocument as exc:
@@ -148,6 +188,16 @@ class ProcessDocumentHandler:
         self.store.mark_unsupported(document_id, user_id, reason=reason)
         return JobResult({"result": "unsupported", "reason": reason})
 
+    def _embed(self, chunks: list[ExtractedChunk]) -> dict[int, list[float]]:
+        if not chunks:
+            return {}
+        vectors = self.embedder.embed([chunk.content for chunk in chunks])
+        if len(vectors) != len(chunks):
+            raise RuntimeError(
+                f"embedding provider returned {len(vectors)} vectors for {len(chunks)} chunks"
+            )
+        return {chunk.chunk_index: vectors[index] for index, chunk in enumerate(chunks)}
+
     def _report(self, job: AiJob, progress: int, step: str) -> None:
         # Progress is best-effort observability; never fail a job over it.
         try:
@@ -157,6 +207,7 @@ class ProcessDocumentHandler:
 
 
 def build_process_document_handler(settings) -> ProcessDocumentHandler:
+    from app.embeddings import build_embedding_provider
     from app.extraction import DoclingPdfExtractor
     from app.jobs.repository import SupabaseRpcJobRepository
     from app.supabase_io import SupabaseDocumentStore, SupabaseStorageDownloader
@@ -176,6 +227,7 @@ def build_process_document_handler(settings) -> ProcessDocumentHandler:
             service_role_key=settings.supabase_service_role_key,
             worker_id=settings.worker_id,
         ),
+        embedder=build_embedding_provider(settings),
     )
 
 

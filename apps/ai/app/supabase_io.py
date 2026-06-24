@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from urllib import error, request
 
+from app.embeddings import to_pgvector
+
 
 class SupabaseHttpError(RuntimeError):
     pass
@@ -66,11 +68,21 @@ class SupabaseDocumentStore:
     def mark_processing(self, document_id: str, user_id: str) -> None:
         self._patch_document(document_id, {"status": "processing", "processing_error": None})
 
-    def mark_ready(self, document_id: str, user_id: str, *, page_count: int) -> None:
-        self._patch_document(
-            document_id,
-            {"status": "ready", "page_count": page_count, "processing_error": None},
-        )
+    def mark_ready(
+        self,
+        document_id: str,
+        user_id: str,
+        *,
+        page_count: int,
+        embedding_provider: str | None = None,
+        embedding_model: str | None = None,
+    ) -> None:
+        patch = {"status": "ready", "page_count": page_count, "processing_error": None}
+        if embedding_provider is not None:
+            patch["embedding_provider"] = embedding_provider
+        if embedding_model is not None:
+            patch["embedding_model"] = embedding_model
+        self._patch_document(document_id, patch)
 
     def mark_unsupported(self, document_id: str, user_id: str, *, reason: str) -> None:
         self._patch_document(document_id, {"status": "unsupported", "processing_error": reason})
@@ -113,7 +125,54 @@ class SupabaseDocumentStore:
         if rows:
             self._upsert("document_chunks", rows, on_conflict="document_id,chunk_index")
 
+    def save_embeddings(
+        self,
+        document_id: str,
+        user_id: str,
+        *,
+        provider: str,
+        model: str,
+        target_table: str,
+        embeddings_by_index: dict[int, list[float]],
+    ) -> None:
+        if not embeddings_by_index:
+            return
+        # Resolve chunk_index -> chunk_id from the just-written chunks (survives
+        # upsert re-runs; keeps save_chunks' signature unchanged).
+        chunks = self._get(
+            f"{self.base}/rest/v1/document_chunks"
+            f"?document_id=eq.{document_id}&select=id,chunk_index"
+        )
+        id_by_index = {int(row["chunk_index"]): row["id"] for row in chunks}
+        rows = []
+        for index, vector in embeddings_by_index.items():
+            chunk_id = id_by_index.get(int(index))
+            if chunk_id is None:
+                continue
+            rows.append(
+                {
+                    "user_id": user_id,
+                    "chunk_id": chunk_id,
+                    "provider": provider,
+                    "model": model,
+                    "embedding": to_pgvector(vector),
+                }
+            )
+        if rows:
+            self._upsert(target_table, rows, on_conflict="chunk_id,provider,model")
+
     # --- HTTP ---
+
+    def _get(self, url: str) -> list[dict]:
+        req = request.Request(url, method="GET", headers=_auth_headers(self.service_role_key))
+        try:
+            with request.urlopen(req, timeout=self.timeout_seconds) as response:
+                return json.loads(response.read().decode("utf-8") or "[]")
+        except error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise SupabaseHttpError(f"GET {url} failed ({exc.code}): {detail}") from exc
+        except error.URLError as exc:
+            raise SupabaseHttpError(str(exc.reason)) from exc
 
     def _patch_document(self, document_id: str, patch: dict) -> None:
         url = f"{self.base}/rest/v1/documents?id=eq.{document_id}"
