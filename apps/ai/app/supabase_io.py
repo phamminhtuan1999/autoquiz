@@ -381,3 +381,85 @@ class SupabaseQuizStore:
         _post_returning(
             self.base, self.service_role_key, "questions", card_rows, self.timeout_seconds
         )
+
+    def save_study_review(self, *, quiz_set_id: str, user_id: str, document_id: str, review) -> str:
+        """US-RAG-010: persist one ``study_reviews`` row keyed to a
+        ``study_review`` quiz_set. ``summary``/``weak_topics``/
+        ``recommended_actions`` are jsonb columns written as JSON values."""
+        weak_topics = [
+            {
+                "topic": w.topic,
+                "why": w.why,
+                "recommended_action": w.recommended_action,
+                "source": {
+                    "chunk_id": w.source_chunk_id,
+                    "page_start": w.source_page_start,
+                    "page_end": w.source_page_end,
+                    "excerpt": w.source_excerpt,
+                },
+            }
+            for w in review.weak_topics
+        ]
+        created = _post_returning(
+            self.base,
+            self.service_role_key,
+            "study_reviews",
+            [
+                {
+                    "user_id": user_id,
+                    "quiz_set_id": quiz_set_id,
+                    "document_id": document_id,
+                    "summary": review.summary,
+                    "weak_topics": weak_topics,
+                    "recommended_actions": review.recommended_actions,
+                }
+            ],
+            self.timeout_seconds,
+        )
+        return created[0]["id"]
+
+
+class SupabaseAttemptSource:
+    """US-RAG-010: read a student's RAG attempts for a document as the
+    weak-area signal for a study review.
+
+    Joins ``rag_question_attempts`` → ``questions`` (PostgREST embedded resource,
+    inner so attempts without a live question are dropped) to enrich each attempt
+    with its question's topic / prompt / correct answer. Optionally narrowed to
+    one source ``quiz_set`` the student took.
+    """
+
+    def __init__(self, *, supabase_url: str, service_role_key: str, timeout_seconds: int = 30) -> None:
+        self.base = supabase_url.rstrip("/")
+        self.service_role_key = service_role_key
+        self.timeout_seconds = timeout_seconds
+
+    def fetch_attempts(
+        self, document_id: str, user_id: str, *, source_quiz_set_id: str | None, limit: int
+    ):
+        from app.jobs.generate_study_review import AttemptRecord
+
+        query = (
+            f"rag_question_attempts?user_id=eq.{user_id}"
+            "&select=question_id,quiz_set_id,is_correct,"
+            "questions!inner(topic,prompt,correct_answer,document_id)"
+            f"&questions.document_id=eq.{document_id}"
+            f"&order=created_at.desc&limit={int(limit)}"
+        )
+        if source_quiz_set_id:
+            query += f"&quiz_set_id=eq.{source_quiz_set_id}"
+        rows = _get_json(self.base, self.service_role_key, query, self.timeout_seconds)
+        attempts = []
+        for row in rows:
+            question = row.get("questions") or {}
+            attempts.append(
+                AttemptRecord(
+                    question_id=row["question_id"],
+                    quiz_set_id=row.get("quiz_set_id"),
+                    topic=question.get("topic"),
+                    prompt=question.get("prompt") or "",
+                    correct_answer=question.get("correct_answer"),
+                    is_correct=row.get("is_correct"),
+                )
+            )
+        return attempts
