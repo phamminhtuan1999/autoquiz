@@ -64,6 +64,9 @@ lint_output.txt
 .opencode/
 .impeccable/
 
+# IDE files
+.idea/
+
 # Portfolio generated assets (screenshots, AI-generated docs).
 portfolio/
 
