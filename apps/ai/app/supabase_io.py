@@ -382,6 +382,40 @@ class SupabaseQuizStore:
             self.base, self.service_role_key, "questions", card_rows, self.timeout_seconds
         )
 
+    def save_essays(self, *, quiz_set_id: str, user_id: str, document_id: str, essays) -> None:
+        """US-RAG-012: persist mock-exam essay questions as ``questions``
+        (``type='essay'``). The grading rubric / max-points / suggested-minutes
+        ride in ``metadata`` (decision 0012); ``correct_answer`` holds the
+        reference sample answer. Essays have no ``answer_options``."""
+        if not essays:
+            return
+        essay_rows = [
+            {
+                "user_id": user_id,
+                "quiz_set_id": quiz_set_id,
+                "document_id": document_id,
+                "source_chunk_id": e.source_chunk_id,
+                "type": "essay",
+                "difficulty": e.difficulty,
+                "topic": e.topic,
+                "prompt": e.prompt,
+                "correct_answer": e.sample_answer,
+                "explanation": e.explanation,
+                "source_page_start": e.source_page_start,
+                "source_page_end": e.source_page_end,
+                "source_excerpt": e.source_excerpt,
+                "metadata": {
+                    "rubric": e.rubric,
+                    "max_points": e.max_points,
+                    "suggested_minutes": e.suggested_minutes,
+                },
+            }
+            for e in essays
+        ]
+        _post_returning(
+            self.base, self.service_role_key, "questions", essay_rows, self.timeout_seconds
+        )
+
     def save_study_review(self, *, quiz_set_id: str, user_id: str, document_id: str, review) -> str:
         """US-RAG-010: persist one ``study_reviews`` row keyed to a
         ``study_review`` quiz_set. ``summary``/``weak_topics``/
