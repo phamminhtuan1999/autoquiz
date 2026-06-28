@@ -2,11 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Loader2, Sparkles, AlertCircle, ArrowRight } from "lucide-react";
+import { Loader2, Sparkles, Layers, AlertCircle, ArrowRight } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { enqueueQuizGeneration } from "@/actions/enqueue-quiz-generation";
+import {
+  enqueueQuizGeneration,
+  type GenerationMode,
+} from "@/actions/enqueue-quiz-generation";
 
 const POLL_MS = 4000;
+
+const COPY: Record<
+  GenerationMode,
+  { idle: string; generating: string; success: string; Icon: typeof Sparkles }
+> = {
+  regular: {
+    idle: "Generate quiz",
+    generating: "Generating quiz…",
+    success: "Take quiz",
+    Icon: Sparkles,
+  },
+  cram: {
+    idle: "Generate cram",
+    generating: "Generating cram…",
+    success: "Study cram",
+    Icon: Layers,
+  },
+};
 
 type JobRow = {
   id: string;
@@ -20,11 +41,19 @@ type JobRow = {
 const JOB_COLUMNS = "id,status,progress,current_step,error_message,output";
 
 /**
- * US-RAG-008b: trigger source-grounded quiz generation for a ready document and
- * poll the `ai_jobs` row to completion (same enqueue+poll pattern as document
- * processing). On success, links to the cited quiz player.
+ * US-RAG-008b / US-RAG-009b: trigger source-grounded generation for a ready
+ * document and poll the `ai_jobs` row to completion (same enqueue+poll pattern
+ * as document processing). `mode` selects a regular MCQ quiz or a cram flashcard
+ * deck; on success, links to the matching cited player.
  */
-export function GenerateQuizControl({ documentId }: { documentId: string }) {
+export function GenerateQuizControl({
+  documentId,
+  mode = "regular",
+}: {
+  documentId: string;
+  mode?: GenerationMode;
+}) {
+  const copy = COPY[mode];
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<JobRow | null>(null);
   const [starting, setStarting] = useState(false);
@@ -59,7 +88,7 @@ export function GenerateQuizControl({ documentId }: { documentId: string }) {
   const start = async () => {
     setStarting(true);
     setError(null);
-    const result = await enqueueQuizGeneration({ documentId, numQuestions: 5 });
+    const result = await enqueueQuizGeneration({ documentId, mode });
     setStarting(false);
     if ("error" in result) {
       setError(result.error);
@@ -76,7 +105,7 @@ export function GenerateQuizControl({ documentId }: { documentId: string }) {
         href={`/dashboard/quiz-sets/${job.output.quiz_set_id}`}
         className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--success-border)] bg-[var(--success-bg)] px-3 py-1.5 text-xs font-medium text-[var(--success)] transition-opacity hover:opacity-80"
       >
-        Take quiz
+        {copy.success}
         <ArrowRight className="h-3.5 w-3.5" />
       </Link>
     );
@@ -104,7 +133,7 @@ export function GenerateQuizControl({ documentId }: { documentId: string }) {
     return (
       <div className="flex items-center gap-2 text-xs text-[var(--fg-muted)]">
         <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
-        <span>{job?.current_step ?? "Generating quiz…"}</span>
+        <span>{job?.current_step ?? copy.generating}</span>
         {typeof job?.progress === "number" && job.progress > 0 && (
           <span className="font-mono text-[var(--fg-faint)]">{job.progress}%</span>
         )}
@@ -123,9 +152,9 @@ export function GenerateQuizControl({ documentId }: { documentId: string }) {
       {starting ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
       ) : (
-        <Sparkles className="h-3.5 w-3.5" />
+        <copy.Icon className="h-3.5 w-3.5" />
       )}
-      Generate quiz
+      {copy.idle}
     </button>
   );
 }
