@@ -388,8 +388,9 @@ export function DocumentsPanel({ userId, initialDocuments }: DocumentsPanelProps
                       )}
 
                     {doc.status === "ready" && (
-                      <div className="mt-2">
-                        <GenerateQuizControl documentId={doc.id} />
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <GenerateQuizControl documentId={doc.id} mode="regular" />
+                        <GenerateQuizControl documentId={doc.id} mode="cram" />
                       </div>
                     )}
                   </div>

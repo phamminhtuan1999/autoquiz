@@ -2,9 +2,14 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export type GenerationMode = "regular" | "cram";
+
 export type EnqueueQuizInput = {
   documentId: string;
+  /** Which RAG generation mode to queue. Defaults to a regular MCQ quiz. */
+  mode?: GenerationMode;
   numQuestions?: number;
+  numCards?: number;
   difficulty?: "easy" | "medium" | "hard";
 };
 
@@ -13,12 +18,13 @@ export type EnqueueQuizResult =
   | { error: string };
 
 /**
- * US-RAG-008b: enqueue a source-grounded quiz generation job for a ready
- * document. Inserts an `ai_jobs` row (job_type=generate_regular_quiz) that the
- * AI worker claims and runs (US-RAG-008). Reads/writes go through the user's
- * session client, so RLS scopes everything to the owner; we additionally check
- * the document is `ready` before queueing. No credit deduction here —
- * US-RAG-011 owns credit spend; the job records credit_cost=0.
+ * US-RAG-008b / US-RAG-009b: enqueue a source-grounded generation job for a
+ * ready document. Inserts an `ai_jobs` row that the AI worker claims and runs —
+ * `generate_regular_quiz` (US-RAG-008) for `mode="regular"` or `generate_cram`
+ * (US-RAG-009) for `mode="cram"`. Reads/writes go through the user's session
+ * client, so RLS scopes everything to the owner; we additionally check the
+ * document is `ready` before queueing. No credit deduction here — US-RAG-011
+ * owns credit spend; the job records credit_cost=0.
  */
 export async function enqueueQuizGeneration(
   input: EnqueueQuizInput
@@ -43,24 +49,35 @@ export async function enqueueQuizGeneration(
     return { error: "This document is still processing. Try again once it is ready." };
   }
 
-  const numQuestions = Math.min(Math.max(input.numQuestions ?? 5, 1), 20);
+  const mode: GenerationMode = input.mode ?? "regular";
+  const difficulty = input.difficulty ?? "medium";
+  const { jobType, jobInput } =
+    mode === "cram"
+      ? {
+          jobType: "generate_cram" as const,
+          jobInput: {
+            document_id: input.documentId,
+            num_cards: Math.min(Math.max(input.numCards ?? 10, 1), 30),
+            difficulty,
+          },
+        }
+      : {
+          jobType: "generate_regular_quiz" as const,
+          jobInput: {
+            document_id: input.documentId,
+            num_questions: Math.min(Math.max(input.numQuestions ?? 5, 1), 20),
+            difficulty,
+          },
+        };
 
   const { data: job, error: jobError } = await supabase
     .from("ai_jobs")
-    .insert({
-      user_id: user.id,
-      job_type: "generate_regular_quiz",
-      input: {
-        document_id: input.documentId,
-        num_questions: numQuestions,
-        difficulty: input.difficulty ?? "medium",
-      },
-    })
+    .insert({ user_id: user.id, job_type: jobType, input: jobInput })
     .select("id")
     .single();
 
   if (jobError || !job) {
-    return { error: jobError?.message ?? "Could not queue quiz generation." };
+    return { error: jobError?.message ?? "Could not queue generation." };
   }
   return { jobId: job.id as string };
 }
