@@ -2,7 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type GenerationMode = "regular" | "cram";
+export type GenerationMode = "regular" | "cram" | "mock";
 
 export type EnqueueQuizInput = {
   documentId: string;
@@ -10,8 +10,13 @@ export type EnqueueQuizInput = {
   mode?: GenerationMode;
   numQuestions?: number;
   numCards?: number;
+  numMcq?: number;
+  numEssay?: number;
   difficulty?: "easy" | "medium" | "hard";
 };
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
 
 export type EnqueueQuizResult =
   | { jobId: string }
@@ -51,24 +56,34 @@ export async function enqueueQuizGeneration(
 
   const mode: GenerationMode = input.mode ?? "regular";
   const difficulty = input.difficulty ?? "medium";
-  const { jobType, jobInput } =
-    mode === "cram"
-      ? {
-          jobType: "generate_cram" as const,
-          jobInput: {
-            document_id: input.documentId,
-            num_cards: Math.min(Math.max(input.numCards ?? 10, 1), 30),
-            difficulty,
-          },
-        }
-      : {
-          jobType: "generate_regular_quiz" as const,
-          jobInput: {
-            document_id: input.documentId,
-            num_questions: Math.min(Math.max(input.numQuestions ?? 5, 1), 20),
-            difficulty,
-          },
-        };
+  const dispatch: Record<GenerationMode, { jobType: string; jobInput: Record<string, unknown> }> = {
+    regular: {
+      jobType: "generate_regular_quiz",
+      jobInput: {
+        document_id: input.documentId,
+        num_questions: clamp(input.numQuestions ?? 5, 1, 20),
+        difficulty,
+      },
+    },
+    cram: {
+      jobType: "generate_cram",
+      jobInput: {
+        document_id: input.documentId,
+        num_cards: clamp(input.numCards ?? 10, 1, 30),
+        difficulty,
+      },
+    },
+    mock: {
+      jobType: "generate_mock_exam",
+      jobInput: {
+        document_id: input.documentId,
+        num_mcq: clamp(input.numMcq ?? 10, 1, 30),
+        num_essay: clamp(input.numEssay ?? 2, 0, 5),
+        difficulty,
+      },
+    },
+  };
+  const { jobType, jobInput } = dispatch[mode];
 
   const { data: job, error: jobError } = await supabase
     .from("ai_jobs")
