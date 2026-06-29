@@ -10,6 +10,11 @@ import {
   RagCramPlayer,
   type CramCard,
 } from "@/components/quiz/rag-cram-player";
+import {
+  RagMockPlayer,
+  type MockMcq,
+  type MockEssay,
+} from "@/components/quiz/rag-mock-player";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +24,7 @@ type QuizSetPageProps = {
 
 type QuestionRow = {
   id: string;
+  type: string;
   prompt: string;
   difficulty: string | null;
   topic: string | null;
@@ -27,6 +33,11 @@ type QuestionRow = {
   source_page_start: number | null;
   source_page_end: number | null;
   source_excerpt: string | null;
+  metadata: {
+    max_points?: number | null;
+    suggested_minutes?: number | null;
+    rubric?: unknown;
+  } | null;
   created_at: string;
   answer_options: {
     id: string;
@@ -56,7 +67,7 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
   const { data: questionRows } = await supabase
     .from("questions")
     .select(
-      "id,prompt,difficulty,topic,explanation,correct_answer,source_page_start,source_page_end,source_excerpt,created_at," +
+      "id,type,prompt,difficulty,topic,explanation,correct_answer,source_page_start,source_page_end,source_excerpt,metadata,created_at," +
         "answer_options(id,label,content,is_correct)"
     )
     .eq("quiz_set_id", quizSetId)
@@ -65,6 +76,7 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
 
   const rows = (questionRows ?? []) as unknown as QuestionRow[];
   const isCram = quizSet.mode === "cram";
+  const isMock = quizSet.mode === "mock";
 
   const cards: CramCard[] = rows.map((q) => ({
     id: q.id,
@@ -91,12 +103,58 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
       .map((o) => ({ id: o.id, label: o.label, content: o.content, isCorrect: o.is_correct })),
   }));
 
+  // Mock sets carry two question kinds; split them and derive a time limit from
+  // the questions' suggested minutes (the same formula as the backend default).
+  const sortOptions = (q: QuestionRow): MockMcq["options"] =>
+    [...(q.answer_options ?? [])]
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((o) => ({ id: o.id, label: o.label, content: o.content, isCorrect: o.is_correct }));
+
+  const mockMcqs: MockMcq[] = rows
+    .filter((q) => q.type === "mcq")
+    .map((q) => ({
+      id: q.id,
+      prompt: q.prompt,
+      difficulty: q.difficulty,
+      topic: q.topic,
+      sourcePageStart: q.source_page_start,
+      sourceExcerpt: q.source_excerpt,
+      options: sortOptions(q),
+    }));
+
+  const mockEssays: MockEssay[] = rows
+    .filter((q) => q.type === "essay")
+    .map((q) => ({
+      id: q.id,
+      prompt: q.prompt,
+      maxPoints: q.metadata?.max_points ?? null,
+      suggestedMinutes: q.metadata?.suggested_minutes ?? null,
+      difficulty: q.difficulty,
+      topic: q.topic,
+      sourcePageStart: q.source_page_start,
+      sourceExcerpt: q.source_excerpt,
+    }));
+
+  const timeLimitMinutes = Math.max(
+    1,
+    Math.round(
+      mockMcqs.length * 1.5 +
+        mockEssays.reduce((sum, e) => sum + (e.suggestedMinutes ?? 12), 0)
+    )
+  );
+
   const count = rows.length;
-  const eyebrow = isCram ? "Source-grounded cram" : "Source-grounded quiz";
+  const eyebrow = isMock
+    ? "Source-grounded mock exam"
+    : isCram
+      ? "Source-grounded cram"
+      : "Source-grounded quiz";
   const noun = isCram ? "card" : "question";
-  const subtitle = isCram
-    ? "flip to study — every card cites the page it came from."
-    : "every answer cites the page it came from.";
+  const subtitle = isMock
+    ? `timed ${timeLimitMinutes} min · MCQ auto-graded, essays graded against a cited rubric.`
+    : isCram
+      ? "flip to study — every card cites the page it came from."
+      : "every answer cites the page it came from.";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-8">
@@ -124,8 +182,15 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
 
       {count === 0 ? (
         <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-subtle)] px-6 py-12 text-center text-sm text-[var(--fg-muted)]">
-          This {isCram ? "deck" : "quiz"} has no {noun}s yet.
+          This {isCram ? "deck" : isMock ? "exam" : "quiz"} has no {noun}s yet.
         </div>
+      ) : isMock ? (
+        <RagMockPlayer
+          quizSetId={quizSet.id}
+          mcqs={mockMcqs}
+          essays={mockEssays}
+          timeLimitMinutes={timeLimitMinutes}
+        />
       ) : isCram ? (
         <RagCramPlayer quizSetId={quizSet.id} cards={cards} />
       ) : (

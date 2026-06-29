@@ -6,15 +6,20 @@ export type RecordRagAttemptInput = {
   questionId: string;
   quizSetId: string;
   selectedOptionId: string | null;
-  isCorrect: boolean;
+  /** MCQ/flashcard correctness; `null` for an essay answer (graded later). */
+  isCorrect: boolean | null;
+  /** Free-text answer for an essay question (US-RAG-012b); omitted for MCQ. */
+  answerText?: string | null;
   timeSpentMs?: number;
 };
 
 /**
  * US-RAG-008b: record one answered RAG question into `rag_question_attempts`,
  * the table that runs beside the legacy `question_attempts` during cutover.
- * Best-effort: a failed insert is logged and returned, but never blocks the
- * student from continuing the quiz.
+ * MCQ/flashcard rows carry `selected_option_id` + `is_correct`; an essay row
+ * (US-RAG-012b) carries `answer_text` with a null `is_correct` (graded later by
+ * the `grade_mock_exam` job). Best-effort: a failed insert is logged and
+ * returned, but never blocks the student from continuing the quiz.
  */
 export async function recordRagAttempt(input: RecordRagAttemptInput) {
   const supabase = createSupabaseBrowserClient();
@@ -29,6 +34,7 @@ export async function recordRagAttempt(input: RecordRagAttemptInput) {
     quiz_set_id: input.quizSetId,
     selected_option_id: input.selectedOptionId,
     is_correct: input.isCorrect,
+    answer_text: input.answerText ?? null,
     time_spent_ms: input.timeSpentMs ?? null,
   });
 

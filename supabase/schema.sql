@@ -128,7 +128,8 @@ create table if not exists public.ai_jobs (
       'generate_regular_quiz',
       'generate_cram',
       'generate_study_review',
-      'generate_mock_exam'
+      'generate_mock_exam',
+      'grade_mock_exam'
     )),
   status text not null default 'queued'
     check (status in ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
@@ -173,6 +174,37 @@ begin
     alter table public.ai_jobs
       add constraint ai_jobs_max_attempts_check check (max_attempts > 0);
   end if;
+end;
+$$;
+
+-- US-RAG-012b: admit the grade_mock_exam job type (additive — existing rows keep
+-- their job_type, no backfill). The job_type CHECK is created inline with an
+-- auto-generated name, so existing databases keep the older 5-type constraint
+-- until this runs. Drop whichever check constraint references job_type and
+-- recreate the canonical superset; idempotent on re-run.
+do $$
+declare
+  constraint_name text;
+begin
+  for constraint_name in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.ai_jobs'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%job_type%'
+  loop
+    execute format('alter table public.ai_jobs drop constraint %I', constraint_name);
+  end loop;
+
+  alter table public.ai_jobs
+    add constraint ai_jobs_job_type_check check (job_type in (
+      'process_document',
+      'generate_regular_quiz',
+      'generate_cram',
+      'generate_study_review',
+      'generate_mock_exam',
+      'grade_mock_exam'
+    ));
 end;
 $$;
 

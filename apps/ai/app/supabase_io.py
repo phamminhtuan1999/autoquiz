@@ -453,6 +453,63 @@ class SupabaseQuizStore:
         return created[0]["id"]
 
 
+class SupabaseEssayAnswerSource:
+    """US-RAG-012b: read a mock set's essay questions and the student's latest
+    answer for each, for ``grade_mock_exam``.
+
+    Two plain reads (no fragile embedded-resource filter): the essay
+    ``questions`` for the set — each carrying its grading rubric / max-points in
+    ``metadata`` (decision 0012) and the reference sample answer in
+    ``correct_answer`` — and the student's ``rag_question_attempts`` answer text
+    for the set, keyed back to the latest answer per question. Returns one
+    ``EssayToGrade`` per essay question (answered or not).
+    """
+
+    def __init__(self, *, supabase_url: str, service_role_key: str, timeout_seconds: int = 30) -> None:
+        self.base = supabase_url.rstrip("/")
+        self.service_role_key = service_role_key
+        self.timeout_seconds = timeout_seconds
+
+    def fetch_essays_to_grade(self, quiz_set_id: str, user_id: str):
+        from app.jobs.grade_mock_exam import EssayToGrade
+
+        questions = _get_json(
+            self.base,
+            self.service_role_key,
+            f"questions?quiz_set_id=eq.{quiz_set_id}&user_id=eq.{user_id}&type=eq.essay"
+            "&select=id,prompt,correct_answer,metadata&order=created_at.asc",
+            self.timeout_seconds,
+        )
+        attempts = _get_json(
+            self.base,
+            self.service_role_key,
+            f"rag_question_attempts?quiz_set_id=eq.{quiz_set_id}&user_id=eq.{user_id}"
+            "&answer_text=not.is.null&select=question_id,answer_text,created_at"
+            "&order=created_at.desc",
+            self.timeout_seconds,
+        )
+        latest_answer: dict[str, str] = {}
+        for attempt in attempts:
+            qid = attempt.get("question_id")
+            if qid and qid not in latest_answer:
+                latest_answer[qid] = attempt.get("answer_text")
+
+        essays = []
+        for question in questions:
+            metadata = question.get("metadata") or {}
+            essays.append(
+                EssayToGrade(
+                    question_id=question["id"],
+                    prompt=question.get("prompt") or "",
+                    rubric=metadata.get("rubric") or {},
+                    max_points=metadata.get("max_points"),
+                    sample_answer=question.get("correct_answer"),
+                    student_answer=latest_answer.get(question["id"]),
+                )
+            )
+        return essays
+
+
 class SupabaseAttemptSource:
     """US-RAG-010: read a student's RAG attempts for a document as the
     weak-area signal for a study review.

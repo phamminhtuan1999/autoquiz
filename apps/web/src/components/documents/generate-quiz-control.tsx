@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Loader2, Sparkles, Layers, AlertCircle, ArrowRight } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Layers,
+  GraduationCap,
+  AlertCircle,
+  ArrowRight,
+} from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   enqueueQuizGeneration,
@@ -26,6 +33,12 @@ const COPY: Record<
     generating: "Generating cram…",
     success: "Study cram",
     Icon: Layers,
+  },
+  mock: {
+    idle: "Generate mock exam",
+    generating: "Generating mock exam…",
+    success: "Take mock exam",
+    Icon: GraduationCap,
   },
 };
 
