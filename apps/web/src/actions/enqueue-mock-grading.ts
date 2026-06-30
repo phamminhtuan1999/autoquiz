@@ -12,7 +12,8 @@ export type EnqueueMockGradingResult = { jobId: string } | { error: string };
  *
  * Reads/writes go through the user's session client, so RLS scopes everything to
  * the owner; we additionally check the set exists, is owned, and is `mode='mock'`
- * before queueing. No credit deduction here — US-RAG-011 owns credit spend.
+ * before queueing. US-RAG-011: grading is free (credit_cost=0) — the 5 credits
+ * charged when the mock exam was generated cover the whole session.
  */
 export async function enqueueMockGrading(input: {
   quizSetId: string;
@@ -43,6 +44,7 @@ export async function enqueueMockGrading(input: {
       user_id: user.id,
       job_type: "grade_mock_exam",
       input: { quiz_set_id: input.quizSetId },
+      credit_cost: 0,
     })
     .select("id")
     .single();
