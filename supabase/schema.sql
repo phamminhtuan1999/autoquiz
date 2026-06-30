@@ -1046,3 +1046,236 @@ begin
   end if;
 end;
 $$;
+
+
+-- ============================================================================
+-- US-RAG-011: credit ledger (credit_transactions)
+-- ----------------------------------------------------------------------------
+-- Introduce an append-only ledger of every credit movement while keeping
+-- public.profiles.credits as the authoritative running balance (decision 0015).
+-- Existing economics are preserved exactly: 3 free credits on signup, spend per
+-- generation (regular 1, cram 3, mock 5, study review 1; mock grading 0), and
+-- +10 per Stripe purchase. This block is additive and idempotent — it neither
+-- migrates nor resets any existing balance, and every credit-mutating RPC keeps
+-- its prior signature so current callers (incl. the Stripe path) are unchanged.
+-- ============================================================================
+
+create table if not exists public.credit_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  amount integer not null,            -- signed: positive = grant, negative = spend
+  balance_after integer not null,     -- public.profiles.credits snapshot after this row
+  reason text not null,               -- 'signup_grant' | 'purchase' | 'refund' | a generation job_type
+  ref_type text,                      -- 'ai_job' | 'payment_event' | null
+  ref_id text,                        -- ai_jobs.id / payment_events.session_id, when known
+  created_at timestamptz not null default now()
+);
+
+create index if not exists credit_transactions_user_created_idx
+  on public.credit_transactions (user_id, created_at desc);
+
+alter table public.credit_transactions enable row level security;
+
+-- Ledger rows are written only by the SECURITY DEFINER credit RPCs below, never
+-- by client sessions: a self-select policy and no insert/update/delete policy.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'credit_transactions'
+      and policyname = 'Users see own credit transactions'
+  ) then
+    create policy "Users see own credit transactions"
+      on public.credit_transactions
+      for select
+      using (auth.uid() = user_id);
+  end if;
+end;
+$$;
+
+-- Record the credit_cost a generation reserved (audit + the ai_job -> spend link).
+alter table public.ai_jobs
+  add column if not exists credit_cost integer not null default 0;
+
+-- Ledger the free signup grant when a new profile is first created.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_rows int;
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name')
+  on conflict (id) do nothing;
+  get diagnostics v_rows = row_count;
+  if v_rows > 0 then
+    insert into public.credit_transactions (user_id, amount, balance_after, reason)
+    select new.id, p.credits, p.credits, 'signup_grant'
+    from public.profiles p
+    where p.id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+-- Grant (Stripe purchase). Unchanged signature; now also ledgers reason 'purchase'.
+create or replace function public.add_credits(p_user_id uuid, p_amount int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_balance int;
+begin
+  update public.profiles
+  set credits = credits + p_amount
+  where id = p_user_id
+  returning credits into v_balance;
+  if not found then
+    raise exception 'Profile % not found', p_user_id;
+  end if;
+  insert into public.credit_transactions (user_id, amount, balance_after, reason)
+  values (p_user_id, p_amount, v_balance, 'purchase');
+end;
+$$;
+
+-- Legacy single-credit spend (retired with the cutover). Unchanged signature;
+-- now also ledgers reason 'spend'.
+create or replace function public.deduct_credit(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_balance int;
+begin
+  update public.profiles
+  set credits = credits - 1
+  where id = p_user_id and credits > 0
+  returning credits into v_balance;
+  if not found then
+    raise exception 'Insufficient credits';
+  end if;
+  insert into public.credit_transactions (user_id, amount, balance_after, reason)
+  values (p_user_id, -1, v_balance, 'spend');
+end;
+$$;
+
+-- Legacy multi-credit spend (retired with the cutover). Unchanged signature;
+-- now also ledgers reason 'spend'.
+create or replace function public.deduct_credits(p_user_id uuid, p_amount int)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_balance int;
+begin
+  update public.profiles
+  set credits = credits - p_amount
+  where id = p_user_id and credits >= p_amount
+  returning credits into v_balance;
+  if not found then
+    raise exception 'Insufficient credits';
+  end if;
+  insert into public.credit_transactions (user_id, amount, balance_after, reason)
+  values (p_user_id, -p_amount, v_balance, 'spend');
+end;
+$$;
+
+-- RAG spend: atomically gate on balance, deduct, and ledger with the generation
+-- reason + optional ai_job ref. Returns the new balance. Used by the RAG enqueue
+-- path so the charge is reserved when the async job is queued, not when it runs.
+create or replace function public.spend_credits(
+  p_user_id uuid,
+  p_amount int,
+  p_reason text,
+  p_ref_id uuid default null
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_balance int;
+begin
+  if p_amount < 0 then
+    raise exception 'spend_credits amount must be non-negative';
+  end if;
+  if p_amount = 0 then
+    select credits into v_balance from public.profiles where id = p_user_id;
+    return v_balance;
+  end if;
+  update public.profiles
+  set credits = credits - p_amount
+  where id = p_user_id and credits >= p_amount
+  returning credits into v_balance;
+  if not found then
+    raise exception 'Insufficient credits';
+  end if;
+  insert into public.credit_transactions (user_id, amount, balance_after, reason, ref_type, ref_id)
+  values (p_user_id, -p_amount, v_balance, p_reason, 'ai_job', p_ref_id::text);
+  return v_balance;
+end;
+$$;
+
+-- Refund a previously reserved spend (e.g. the job row failed to enqueue).
+create or replace function public.refund_credits(
+  p_user_id uuid,
+  p_amount int,
+  p_ref_id uuid default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_balance int;
+begin
+  if p_amount <= 0 then
+    return;
+  end if;
+  update public.profiles
+  set credits = credits + p_amount
+  where id = p_user_id
+  returning credits into v_balance;
+  if not found then
+    raise exception 'Profile % not found', p_user_id;
+  end if;
+  insert into public.credit_transactions (user_id, amount, balance_after, reason, ref_type, ref_id)
+  values (p_user_id, p_amount, v_balance, 'refund', 'ai_job', p_ref_id::text);
+end;
+$$;
+
+-- US-RAG-011 (authorization hard gate): credit mutation is a privileged,
+-- server-only operation. These functions take p_user_id as a parameter and are
+-- SECURITY DEFINER, so leaving EXECUTE granted to anon/authenticated (the
+-- Supabase default for public-schema functions) would let any signed-in user
+-- call the RPC directly via PostgREST to grant themselves credits
+-- (add_credits / refund_credits) or drain another user (spend_credits). Restrict
+-- execution to service_role; the server actions authenticate the user and pass
+-- the verified id while calling through the service-role client, never the user
+-- session. (Legacy deduct_credit/deduct_credits keep their grant until the
+-- US-RAG-015 cutover removes them with the legacy generate actions that call
+-- them via the user session.)
+do $$
+begin
+  revoke execute on function public.add_credits(uuid, int) from public, anon, authenticated;
+  revoke execute on function public.spend_credits(uuid, int, text, uuid) from public, anon, authenticated;
+  revoke execute on function public.refund_credits(uuid, int, uuid) from public, anon, authenticated;
+  grant execute on function public.add_credits(uuid, int) to service_role;
+  grant execute on function public.spend_credits(uuid, int, text, uuid) to service_role;
+  grant execute on function public.refund_credits(uuid, int, uuid) to service_role;
+exception
+  when undefined_object then
+    raise notice 'Supabase roles unavailable; skipping credit-function execute grants.';
+end;
+$$;
