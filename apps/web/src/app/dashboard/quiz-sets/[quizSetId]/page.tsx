@@ -15,6 +15,10 @@ import {
   type MockMcq,
   type MockEssay,
 } from "@/components/quiz/rag-mock-player";
+import {
+  RagStudyReview,
+  type StudyReviewData,
+} from "@/components/quiz/rag-study-review";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +81,49 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
   const rows = (questionRows ?? []) as unknown as QuestionRow[];
   const isCram = quizSet.mode === "cram";
   const isMock = quizSet.mode === "mock";
+  const isReview = quizSet.mode === "study_review";
+
+  // A study review is a report, not a set of questions; fetch its row instead.
+  type ReviewRow = {
+    summary: { text?: string; attempts_reviewed?: number; correct?: number; incorrect?: number } | null;
+    weak_topics:
+      | {
+          topic?: string;
+          why?: string;
+          recommended_action?: string;
+          source?: { page_start?: number | null; excerpt?: string | null } | null;
+        }[]
+      | null;
+    recommended_actions: string[] | null;
+  };
+  let review: StudyReviewData | null = null;
+  if (isReview) {
+    const { data: reviewRow } = await supabase
+      .from("study_reviews")
+      .select("summary,weak_topics,recommended_actions")
+      .eq("quiz_set_id", quizSetId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const r = reviewRow as ReviewRow | null;
+    if (r) {
+      review = {
+        text: r.summary?.text ?? "",
+        attemptsReviewed: r.summary?.attempts_reviewed ?? 0,
+        correct: r.summary?.correct ?? 0,
+        incorrect: r.summary?.incorrect ?? 0,
+        weakTopics: (r.weak_topics ?? []).map((w) => ({
+          topic: w.topic ?? "",
+          why: w.why ?? "",
+          recommendedAction: w.recommended_action ?? "",
+          sourcePageStart: w.source?.page_start ?? null,
+          sourceExcerpt: w.source?.excerpt ?? null,
+        })),
+        recommendedActions: r.recommended_actions ?? [],
+      };
+    }
+  }
 
   const cards: CramCard[] = rows.map((q) => ({
     id: q.id,
@@ -144,17 +191,25 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
   );
 
   const count = rows.length;
-  const eyebrow = isMock
-    ? "Source-grounded mock exam"
-    : isCram
-      ? "Source-grounded cram"
-      : "Source-grounded quiz";
+  const reviewedCount = review?.attemptsReviewed ?? 0;
+  const eyebrow = isReview
+    ? "Source-grounded study review"
+    : isMock
+      ? "Source-grounded mock exam"
+      : isCram
+        ? "Source-grounded cram"
+        : "Source-grounded quiz";
   const noun = isCram ? "card" : "question";
-  const subtitle = isMock
-    ? `timed ${timeLimitMinutes} min · MCQ auto-graded, essays graded against a cited rubric.`
-    : isCram
-      ? "flip to study — every card cites the page it came from."
-      : "every answer cites the page it came from.";
+  const metaLine = isReview
+    ? `${reviewedCount} attempt${reviewedCount === 1 ? "" : "s"} reviewed`
+    : `${count} ${noun}${count === 1 ? "" : "s"}`;
+  const subtitle = isReview
+    ? "your weak topics, grounded in the source."
+    : isMock
+      ? `timed ${timeLimitMinutes} min · MCQ auto-graded, essays graded against a cited rubric.`
+      : isCram
+        ? "flip to study — every card cites the page it came from."
+        : "every answer cites the page it came from.";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-8">
@@ -167,8 +222,7 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
             {quizSet.title}
           </h1>
           <p className="text-sm text-[var(--fg-muted)]">
-            {count} {noun}
-            {count === 1 ? "" : "s"} · {subtitle}
+            {metaLine} · {subtitle}
           </p>
         </div>
         <Link
@@ -180,7 +234,15 @@ export default async function QuizSetPage({ params }: QuizSetPageProps) {
         </Link>
       </div>
 
-      {count === 0 ? (
+      {isReview ? (
+        review ? (
+          <RagStudyReview review={review} />
+        ) : (
+          <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-subtle)] px-6 py-12 text-center text-sm text-[var(--fg-muted)]">
+            This review isn’t ready yet.
+          </div>
+        )
+      ) : count === 0 ? (
         <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-subtle)] px-6 py-12 text-center text-sm text-[var(--fg-muted)]">
           This {isCram ? "deck" : isMock ? "exam" : "quiz"} has no {noun}s yet.
         </div>
