@@ -1,0 +1,68 @@
+{
+  "_comment": "US-RAG-016: golden offline cases for the CI eval-gate step. Hand-authored, grounded, clean MCQ items that clear the release bar (json/citation valid, no duplicates). Scored by `python eval_gate.py --offline` with no network and no credits. Growing this toward a larger golden corpus is future work (decision 0014).",
+  "cases": [
+    {
+      "chunks": [
+        {
+          "content": "Cellular respiration converts glucose and oxygen into ATP and carbon dioxide. The mitochondrion is the site where most ATP is produced via the electron transport chain.",
+          "page_start": 1
+        },
+        {
+          "content": "Photosynthesis in chloroplasts converts carbon dioxide and water into glucose and oxygen using light energy from the sun.",
+          "page_start": 2
+        }
+      ],
+      "items": [
+        {
+          "prompt": "Where is most ATP produced in the cell?",
+          "options": ["The mitochondrion", "The nucleus", "The ribosome", "The Golgi apparatus"],
+          "answer_index": 0,
+          "source_chunk": 1,
+          "explanation": "Most ATP is produced in the mitochondrion via the electron transport chain during cellular respiration."
+        },
+        {
+          "prompt": "What does photosynthesis produce?",
+          "options": ["Glucose and oxygen", "ATP and water", "Protein and lipids", "DNA and RNA"],
+          "answer_index": 0,
+          "source_chunk": 2,
+          "explanation": "Photosynthesis in chloroplasts converts carbon dioxide and water into glucose and oxygen."
+        },
+        {
+          "prompt": "Which molecule does cellular respiration consume along with glucose?",
+          "options": ["Oxygen", "Nitrogen", "Helium", "Methane"],
+          "answer_index": 0,
+          "source_chunk": 1,
+          "explanation": "Cellular respiration converts glucose and oxygen into ATP and carbon dioxide."
+        }
+      ]
+    },
+    {
+      "chunks": [
+        {
+          "content": "Newton's first law states that an object at rest stays at rest unless acted upon by a net external force. This property is called inertia.",
+          "page_start": 1
+        },
+        {
+          "content": "Newton's second law states that the net force on an object equals its mass times its acceleration.",
+          "page_start": 2
+        }
+      ],
+      "items": [
+        {
+          "prompt": "What is the name for an object's resistance to a change in motion?",
+          "options": ["Inertia", "Momentum", "Velocity", "Friction"],
+          "answer_index": 0,
+          "source_chunk": 1,
+          "explanation": "Newton's first law describes inertia, the tendency of an object at rest to stay at rest unless acted upon by a net external force."
+        },
+        {
+          "prompt": "According to Newton's second law, net force equals mass times what?",
+          "options": ["Acceleration", "Velocity", "Distance", "Time"],
+          "answer_index": 0,
+          "source_chunk": 2,
+          "explanation": "Newton's second law states that the net force on an object equals its mass times its acceleration."
+        }
+      ]
+    }
+  ]
+}
