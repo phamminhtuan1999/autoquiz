@@ -1,0 +1,57 @@
+name: CI
+
+# US-RAG-016: the repo's first CI gate. Runs on every PR and on pushes to main
+# (post-merge). Two independent jobs:
+#   - ai  : the stdlib `unittest` suite (zero third-party deps) + the eval gate
+#           in OFFLINE mode (no network, no credits) against committed golden
+#           cases, so the release bar (US-RAG-013) is checked automatically.
+#   - web : install the npm workspace, generate Next route types, and type-check.
+# The live provider benchmark (`python eval_gate.py`) stays a manual/local step —
+# it needs a provider key and spends credits, so it is deliberately not in CI.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai:
+    name: ai — unit tests + eval gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Unit tests (stdlib unittest, no deps)
+        run: PYTHONPATH=. python -m unittest discover -s tests
+      - name: Eval gate (offline — no network, no credits)
+        run: PYTHONPATH=. python eval_gate.py --offline tests/fixtures/eval_offline_cases.json
+
+  web:
+    name: web — typegen + typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install workspace
+        run: npm ci
+      - name: Generate Next route types
+        run: npx next typegen
+        working-directory: apps/web
+      - name: Type-check
+        run: npx tsc --noEmit -p tsconfig.json
+        working-directory: apps/web
