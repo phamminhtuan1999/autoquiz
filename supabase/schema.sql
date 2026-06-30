@@ -808,15 +808,9 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
 
--- Quizzes generated per user with Gemini output stored as JSON.
-create table if not exists public.quizzes (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles (id) on delete cascade,
-  title text not null,
-  source_filename text,
-  questions jsonb not null,
-  created_at timestamptz not null default now()
-);
+-- US-RAG-015: the legacy `quizzes` table (direct-Gemini quiz/cram JSON) is retired;
+-- RAG generation uses quiz_sets/questions/answer_options. Existing rows are dropped
+-- by supabase/migrations/0001_retire_legacy_generated_content.sql.
 
 -- Track processed Stripe checkout sessions to guarantee idempotent credits.
 create table if not exists public.payment_events (
@@ -827,15 +821,9 @@ create table if not exists public.payment_events (
   created_at timestamptz not null default now()
 );
 
--- Track individual question attempts for leaderboards.
-create table if not exists public.question_attempts (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles (id) on delete cascade,
-  quiz_id uuid not null references public.quizzes (id) on delete cascade,
-  question_index integer not null,
-  is_correct boolean not null,
-  created_at timestamptz not null default now()
-);
+-- US-RAG-015: the legacy `question_attempts` table (index-based attempts on the
+-- `quizzes` table, used by the retired leaderboard) is retired; RAG attempts use
+-- rag_question_attempts. Existing rows are dropped by the cleanup migration.
 
 -- Helper RPCs to mutate credits atomically.
 create or replace function public.add_credits(p_user_id uuid, p_amount int)
@@ -851,47 +839,14 @@ begin
 end;
 $$;
 
-create or replace function public.deduct_credit(p_user_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  update public.profiles
-  set credits = credits - 1
-  where id = p_user_id
-  and credits > 0;
-
-  if not found then
-    raise exception 'Insufficient credits';
-  end if;
-end;
-$$;
-
-create or replace function public.deduct_credits(p_user_id uuid, p_amount int)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  update public.profiles
-  set credits = credits - p_amount
-  where id = p_user_id
-  and credits >= p_amount;
-
-  if not found then
-    raise exception 'Insufficient credits';
-  end if;
-end;
-$$;
+-- US-RAG-015: the legacy deduct_credit / deduct_credits RPCs are retired (the
+-- legacy generate actions that called them are removed). Credit spend now goes
+-- through spend_credits (US-RAG-011); existing databases drop these via the
+-- cleanup migration.
 
 -- Enforce per-user visibility via RLS.
 alter table public.profiles enable row level security;
-alter table public.quizzes enable row level security;
 alter table public.payment_events enable row level security;
-alter table public.question_attempts enable row level security;
 
 do $$
 begin
@@ -917,28 +872,9 @@ begin
       using (auth.uid() = id);
   end if;
 
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'quizzes'
-      and policyname = 'Users see own quizzes'
-  ) then
-    create policy "Users see own quizzes"
-      on public.quizzes
-      for select
-      using (auth.uid() = user_id);
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'quizzes'
-      and policyname = 'Users insert own quizzes'
-  ) then
-    create policy "Users insert own quizzes"
-      on public.quizzes
-      for insert
-      with check (auth.uid() = user_id);
-  end if;
-
+  -- US-RAG-015: 'Profiles are public' is kept (leaderboard identity may feed
+  -- later RAG attempt analytics). The legacy quizzes / question_attempts
+  -- policies are retired with those tables.
   if not exists (
     select 1 from pg_policies
     where schemaname = 'public' and tablename = 'profiles'
@@ -949,103 +885,14 @@ begin
       for select
       using (true);
   end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'question_attempts'
-      and policyname = 'Users insert own attempts'
-  ) then
-    create policy "Users insert own attempts"
-      on public.question_attempts
-      for insert
-      with check (auth.uid() = user_id);
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'question_attempts'
-      and policyname = 'Attempts are public'
-  ) then
-    create policy "Attempts are public"
-      on public.question_attempts
-      for select
-      using (true);
-  end if;
 end;
 $$;
 
 
 
--- Mock Exams table for premium comprehensive exams
-create table if not exists public.mock_exams (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.profiles (id) on delete cascade,
-  title text not null,
-  source_filenames text[] not null,  -- Array of PDF filenames
-  time_limit_minutes integer not null default 60,
-
-  -- Exam content (JSONB)
-  mcq_questions jsonb not null,      -- 30 MCQs
-  essay_questions jsonb not null,    -- 2 Essays with rubrics
-
-  -- Submission tracking
-  started_at timestamptz,
-  submitted_at timestamptz,
-  time_spent_seconds integer,
-
-  -- Results
-  mcq_answers jsonb,                 -- User's MCQ answers
-  essay_answers jsonb,               -- User's essay responses
-  mcq_score integer,                 -- Out of 30
-  essay_scores jsonb,                -- AI graded essay scores
-  total_score numeric(5,2),          -- Percentage
-  feedback jsonb,                    -- AI-generated feedback
-
-  status text not null default 'draft'
-    check (status in ('draft', 'in_progress', 'submitted', 'graded')),
-
-  created_at timestamptz not null default now()
-);
-
--- RLS policies for mock_exams
-alter table public.mock_exams enable row level security;
-
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'mock_exams'
-      and policyname = 'Users see own mock exams'
-  ) then
-    create policy "Users see own mock exams"
-      on public.mock_exams
-      for select
-      using (auth.uid() = user_id);
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'mock_exams'
-      and policyname = 'Users insert own mock exams'
-  ) then
-    create policy "Users insert own mock exams"
-      on public.mock_exams
-      for insert
-      with check (auth.uid() = user_id);
-  end if;
-
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'mock_exams'
-      and policyname = 'Users update own mock exams'
-  ) then
-    create policy "Users update own mock exams"
-      on public.mock_exams
-      for update
-      using (auth.uid() = user_id);
-  end if;
-end;
-$$;
+-- US-RAG-015: the legacy `mock_exams` table (direct-Gemini exam content + grading
+-- JSON) is retired; RAG mock exams use quiz_sets (mode='mock') + grade_mock_exam.
+-- Existing rows are dropped by the cleanup migration.
 
 
 -- ============================================================================
@@ -1143,51 +990,8 @@ begin
 end;
 $$;
 
--- Legacy single-credit spend (retired with the cutover). Unchanged signature;
--- now also ledgers reason 'spend'.
-create or replace function public.deduct_credit(p_user_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_balance int;
-begin
-  update public.profiles
-  set credits = credits - 1
-  where id = p_user_id and credits > 0
-  returning credits into v_balance;
-  if not found then
-    raise exception 'Insufficient credits';
-  end if;
-  insert into public.credit_transactions (user_id, amount, balance_after, reason)
-  values (p_user_id, -1, v_balance, 'spend');
-end;
-$$;
-
--- Legacy multi-credit spend (retired with the cutover). Unchanged signature;
--- now also ledgers reason 'spend'.
-create or replace function public.deduct_credits(p_user_id uuid, p_amount int)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_balance int;
-begin
-  update public.profiles
-  set credits = credits - p_amount
-  where id = p_user_id and credits >= p_amount
-  returning credits into v_balance;
-  if not found then
-    raise exception 'Insufficient credits';
-  end if;
-  insert into public.credit_transactions (user_id, amount, balance_after, reason)
-  values (p_user_id, -p_amount, v_balance, 'spend');
-end;
-$$;
+-- (US-RAG-015 retired the legacy deduct_credit / deduct_credits RPCs — see the
+-- note above where add_credits is defined.)
 
 -- RAG spend: atomically gate on balance, deduct, and ledger with the generation
 -- reason + optional ai_job ref. Returns the new balance. Used by the RAG enqueue
