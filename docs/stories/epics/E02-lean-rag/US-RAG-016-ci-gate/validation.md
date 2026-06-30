@@ -58,5 +58,7 @@ Verified 2026-06-29.
   aside to reproduce a fresh CI checkout, `npx next typegen` → `✓ Types generated
   successfully`, exit 0; `npx tsc --noEmit -p tsconfig.json` → **exit 0**. Local
   dev artifacts restored afterward.
-- **CI run (PR)**: `ai` and `web` jobs green on the introducing PR — _populated
-  once the PR run completes._
+- **CI run (PR #25)**: the new workflow ran on its own introducing PR — run
+  `28423936079`, conclusion **success**: `ai — unit tests + eval gate` → success,
+  `web — typegen + typecheck` → success (plus Vercel pass). Confirms the
+  clean-checkout web path and the offline ai path both go green in Actions.
