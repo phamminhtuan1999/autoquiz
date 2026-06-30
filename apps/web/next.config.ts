@@ -22,6 +22,22 @@ loadEnvConfig(
   true,
 );
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // US-RAG-015: the legacy direct-Gemini surfaces are retired. Old URLs route to
+  // the RAG flow (upload a document → generate any mode) so bookmarks/links don't
+  // 404. Their page files and actions are removed; the legacy tables are dropped
+  // by a separate cleanup migration (supabase/migrations/).
+  async redirects() {
+    return [
+      { source: "/dashboard/quizzes", destination: "/dashboard/documents", permanent: false },
+      { source: "/dashboard/quizzes/:path*", destination: "/dashboard/documents", permanent: false },
+      { source: "/dashboard/cram", destination: "/dashboard/documents", permanent: false },
+      { source: "/dashboard/cram/:path*", destination: "/dashboard/documents", permanent: false },
+      { source: "/dashboard/mock-exam", destination: "/dashboard/documents", permanent: false },
+      { source: "/dashboard/mock-exam/:path*", destination: "/dashboard/documents", permanent: false },
+      { source: "/dashboard/leaderboard", destination: "/dashboard/analytics", permanent: false },
+    ];
+  },
+};
 
 export default nextConfig;

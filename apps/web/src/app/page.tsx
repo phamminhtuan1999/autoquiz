@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PdfUploader } from "@/components/pdf/uploader";
 import { Hero3DCanvas } from "@/components/landing/hero-3d-canvas";
 import { AuthButton } from "@/components/auth-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -75,13 +74,22 @@ export default function Home() {
         {/* Try it */}
         <section className="mt-20">
           <div className="rounded-[var(--r-xl)] border border-[var(--border)] bg-[var(--bg-subtle)] p-8">
-            <div className="mb-6 space-y-1">
-              <h2 className="font-display text-lg font-semibold text-[var(--fg-strong)]">Try it now</h2>
-              <p className="text-sm text-[var(--fg-muted)]">
-                Drop a PDF. Questions drafted in under 30 seconds. Review before publishing.
-              </p>
+            <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <h2 className="font-display text-lg font-semibold text-[var(--fg-strong)]">Try it now</h2>
+                <p className="max-w-md text-sm text-[var(--fg-muted)]">
+                  Upload a document and we&apos;ll draft a source-grounded quiz, cram deck,
+                  mock exam, or study review — each question cites its passage, and nothing
+                  publishes until you review it.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/documents"
+                className="inline-flex flex-shrink-0 items-center rounded-[var(--r-md)] bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
+              >
+                Upload a document
+              </Link>
             </div>
-            <PdfUploader />
           </div>
         </section>
 

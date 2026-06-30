@@ -7,9 +7,6 @@ import {
   FileText,
   CheckSquare,
   BarChart2,
-  ClipboardList,
-  Trophy,
-  BookOpen,
   Plus,
   LogOut,
   Menu,
@@ -20,14 +17,13 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
+// US-RAG-015: the legacy Mock exams / Leaderboard / Cram-mode links are retired —
+// generation now flows through Documents (upload → generate any RAG mode).
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Review queue", href: "/dashboard/review", icon: CheckSquare },
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
-  { label: "Mock exams", href: "/dashboard/mock-exam", icon: ClipboardList },
-  { label: "Leaderboard", href: "/dashboard/leaderboard", icon: Trophy },
-  { label: "Cram mode", href: "/dashboard/cram", icon: BookOpen },
 ];
 
 interface AppSidebarProps {
@@ -70,7 +66,7 @@ export function AppSidebar({ username }: AppSidebarProps) {
       {/* Generate button */}
       <div className="px-3 pt-4 pb-2">
         <Link
-          href="/"
+          href="/dashboard/documents"
           className="flex w-full items-center gap-2 rounded-[var(--r-sm)] bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
           onClick={() => setMobileOpen(false)}
         >

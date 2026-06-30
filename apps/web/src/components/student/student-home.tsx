@@ -21,9 +21,10 @@ interface StudentHomeProps {
   studyModes?: StudyMode[];
 }
 
+// US-RAG-015: study modes now generate from a source document via the RAG flow.
 const DEFAULT_MODES: StudyMode[] = [
-  { key: "flashcards", label: "Flashcards", description: "Flip through key concepts", href: "/dashboard/cram" },
-  { key: "practice", label: "Practice test", description: "Timed exam simulation", href: "/dashboard/mock-exam" },
+  { key: "flashcards", label: "Flashcards", description: "Flip through key concepts", href: "/dashboard/documents" },
+  { key: "practice", label: "Practice test", description: "Timed exam simulation", href: "/dashboard/documents" },
 ];
 
 export function StudentHome({

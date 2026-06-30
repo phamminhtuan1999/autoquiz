@@ -44,7 +44,14 @@ implemented
 
 ## Non-Goals
 
-- Implement RAG schema.
-- Drop legacy tables.
-- Delete legacy routes/actions.
-- Migrate historical generated content.
+- Implement RAG schema (already shipped in US-RAG-002+).
+- Migrate historical generated content (intentionally discarded, decision 0010).
+- Apply the destructive cleanup migration to production (authored here for the
+  human to run after deploy; not executed against prod by the agent).
+
+> Update (2026-06-30): the retirement this packet mapped is now **executed** —
+> legacy routes/actions/components are removed, old URLs redirect to the RAG
+> documents flow, and the legacy tables (`quizzes`, `question_attempts`,
+> `mock_exams`) are dropped by `supabase/migrations/0001_retire_legacy_generated_content.sql`.
+> "Drop legacy tables" and "Delete legacy routes/actions" are therefore done, not
+> non-goals, as of this pass.
