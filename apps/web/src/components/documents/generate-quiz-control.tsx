@@ -7,6 +7,7 @@ import {
   Sparkles,
   Layers,
   GraduationCap,
+  ClipboardList,
   AlertCircle,
   ArrowRight,
 } from "lucide-react";
@@ -39,6 +40,12 @@ const COPY: Record<
     generating: "Generating mock exam…",
     success: "Take mock exam",
     Icon: GraduationCap,
+  },
+  study_review: {
+    idle: "Generate review",
+    generating: "Building review…",
+    success: "View review",
+    Icon: ClipboardList,
   },
 };
 

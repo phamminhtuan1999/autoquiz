@@ -392,6 +392,7 @@ export function DocumentsPanel({ userId, initialDocuments }: DocumentsPanelProps
                         <GenerateQuizControl documentId={doc.id} mode="regular" />
                         <GenerateQuizControl documentId={doc.id} mode="cram" />
                         <GenerateQuizControl documentId={doc.id} mode="mock" />
+                        <GenerateQuizControl documentId={doc.id} mode="study_review" />
                       </div>
                     )}
                   </div>

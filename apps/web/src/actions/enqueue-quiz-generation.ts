@@ -2,7 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type GenerationMode = "regular" | "cram" | "mock";
+export type GenerationMode = "regular" | "cram" | "mock" | "study_review";
 
 export type EnqueueQuizInput = {
   documentId: string;
@@ -82,8 +82,26 @@ export async function enqueueQuizGeneration(
         difficulty,
       },
     },
+    study_review: {
+      jobType: "generate_study_review",
+      jobInput: { document_id: input.documentId },
+    },
   };
   const { jobType, jobInput } = dispatch[mode];
+
+  // A study review reasons over prior practice. Gate it on existing attempts so
+  // the backend never gets a job it would fail with "no attempts to review".
+  if (mode === "study_review") {
+    const { count } = await supabase
+      .from("rag_question_attempts")
+      .select("id, questions!inner(document_id)", { count: "exact", head: true })
+      .eq("questions.document_id", input.documentId);
+    if (!count) {
+      return {
+        error: "Take a quiz on this document first — a study review needs your attempts.",
+      };
+    }
+  }
 
   const { data: job, error: jobError } = await supabase
     .from("ai_jobs")
