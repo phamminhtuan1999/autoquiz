@@ -75,9 +75,10 @@ Worker contract:
 | `rag_question_attempts` | RAG attempt records keyed by `question_id` and `quiz_set_id`. |
 | `study_reviews` | Generated review summaries, weak topics, and recommended actions. |
 
-`rag_question_attempts` is intentionally namespaced because the legacy
-`question_attempts` table still exists during clean cutover. A later cleanup can
-rename or replace it after legacy generated-content tables are retired.
+`rag_question_attempts` is intentionally namespaced: it coexisted with the legacy
+`question_attempts` table during the cutover. That legacy table has since been
+dropped (US-RAG-015), so the namespacing now simply distinguishes the RAG
+attempts model from the retired one.
 
 ## Retrieval
 
@@ -108,13 +109,20 @@ Authenticated users can manage only their own:
 The Python backend should use the Supabase service role for job execution and
 must still write correct `user_id` values on every row.
 
-## Non-Destructive Cutover
+## Cutover (completed)
 
-This schema is additive. It does not drop or migrate:
+The RAG schema was introduced additively: it did not migrate historical
+generated content, and the legacy tables were kept until every replacement RAG
+flow shipped. Once all four modes (regular, cram, study review, mock) were live,
+US-RAG-015 retired the legacy surfaces and a separate cleanup migration
+(`supabase/migrations/0001_retire_legacy_generated_content.sql`) **dropped** the
+generated-content tables:
 
 - `quizzes`
 - legacy `question_attempts`
 - `mock_exams`
 
-Those generated-content tables are retired only after replacement RAG flows
-exist.
+Account and billing state — `profiles` (incl. `credits`), `payment_events`
+(Stripe idempotency), and the `credit_transactions` ledger — was preserved
+throughout (decisions 0010, 0015). Generated history was intentionally discarded,
+not migrated.
