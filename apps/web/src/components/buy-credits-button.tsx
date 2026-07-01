@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@heroui/react";
+import { CREDIT_PACK, creditPackPriceLabel } from "@/lib/credits";
 
 export function BuyCreditsButton() {
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ export function BuyCreditsButton() {
         onPress={handleClick}
         isDisabled={loading}
       >
-        {loading ? "Redirecting…" : "Buy 10 credits — $4.99"}
+        {loading ? "Redirecting…" : `Buy ${CREDIT_PACK.credits} credits — ${creditPackPriceLabel()}`}
       </Button>
       {error && (
         <p className="text-xs text-[var(--danger)]">{error}</p>

@@ -872,19 +872,13 @@ begin
       using (auth.uid() = id);
   end if;
 
-  -- US-RAG-015: 'Profiles are public' is kept (leaderboard identity may feed
-  -- later RAG attempt analytics). The legacy quizzes / question_attempts
-  -- policies are retired with those tables.
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'profiles'
-      and policyname = 'Profiles are public'
-  ) then
-    create policy "Profiles are public"
-      on public.profiles
-      for select
-      using (true);
-  end if;
+  -- US-RAG-017 / decision 0016: the world-readable 'Profiles are public' SELECT
+  -- policy is removed. It existed for the legacy leaderboard (retired in
+  -- US-RAG-015); with it gone, only the owner can read a profile
+  -- ('Profiles are self accessible'). Existing databases drop the policy via
+  -- supabase/migrations/0002_tighten_profiles_rls.sql. If a future feature needs
+  -- cross-user profile fields, expose them through a scoped view, not a blanket
+  -- public policy on the credits-bearing profiles table.
 end;
 $$;
 
