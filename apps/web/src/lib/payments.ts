@@ -1,7 +1,8 @@
 import Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/server-admin";
+import { CREDIT_PACK } from "@/lib/credits";
 
-const CREDITS_PER_PURCHASE = 10;
+const CREDITS_PER_PURCHASE = CREDIT_PACK.credits;
 
 type ProcessResult = {
   success?: boolean;

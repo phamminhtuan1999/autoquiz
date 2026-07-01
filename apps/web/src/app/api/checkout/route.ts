@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
+import { CREDIT_PACK } from "@/lib/credits";
 
 export async function POST() {
   const supabase = await createSupabaseServerClient();
@@ -28,9 +29,9 @@ export async function POST() {
     line_items: [
       {
         price_data: {
-          currency: "usd",
-          product_data: { name: "Document-to-Quiz Credits (10)" },
-          unit_amount: 990,
+          currency: CREDIT_PACK.currency,
+          product_data: { name: `Document-to-Quiz Credits (${CREDIT_PACK.credits})` },
+          unit_amount: CREDIT_PACK.priceCents,
         },
         quantity: 1,
       },
